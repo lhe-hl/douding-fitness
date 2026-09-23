@@ -1,0 +1,75 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 用户表
+model User {
+  id           String          @id @default(uuid())
+  openid       String          @unique
+  nickname     String?
+  avatarUrl    String?
+  gender       Int?            @default(0) // 0未知, 1男, 2女
+  height       Float?          // 身高 cm
+  weight       Float?          // 体重 kg
+  targetWeight Float?          // 目标体重 kg
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  workouts     WorkoutRecord[]
+  diets        DietRecord[]
+}
+
+// 健身打卡记录
+model WorkoutRecord {
+  id          String         @id @default(uuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        String         // YYYY-MM-DD
+  duration    Int            @default(0) // 训练时长(分钟)
+  bodyParts   String         // 训练部位逗号分隔: "胸部,三头"
+  notes       String?        // 心得感悟
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  exercises   ExerciseItem[]
+
+  @@index([userId, date])
+}
+
+// 具体训练动作组数明细
+model ExerciseItem {
+  id              String        @id @default(uuid())
+  workoutRecordId String
+  workoutRecord   WorkoutRecord @relation(fields: [workoutRecordId], references: [id], onDelete: Cascade)
+  actionName      String        // 动作名: 例如 "杠铃卧推"
+  sets            Int           // 组数序号: 1, 2, 3...
+  weight          Float         // 重量 kg
+  reps            Int           // 每组次数
+  createdAt       DateTime      @default(now())
+
+  @@index([workoutRecordId])
+}
+
+// 减脂餐打卡记录
+model DietRecord {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        String   // YYYY-MM-DD
+  mealType    String   // BREAKFAST, LUNCH, DINNER, SNACK
+  foodName    String   // 食物名称
+  calories    Float    // 预估热量 kcal
+  protein     Float?   // 蛋白质 g
+  carbs       Float?   // 碳水 g
+  fat         Float?   // 脂肪 g
+  photoUrl    String?  // 餐食图片
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, date])
+}
