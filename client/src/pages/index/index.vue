@@ -1,0 +1,128 @@
+﻿<template>
+  <view class="page-container">
+    <!-- 顶部状态栏避让占位 -->
+    <view class="status-bar-placeholder"></view>
+
+    <!-- 滚动区域 -->
+    <scroll-view scroll-y class="scroll-content" :show-scrollbar="false">
+      <view class="inner-padding">
+        <!-- 1. 顶部用户状态栏 -->
+        <HomeHeader
+          :greeting="'早上好'"
+          :date-str="'9月23日 星期三'"
+          :streak-days="5"
+          @click-user="onUserClick"
+          @click-streak="onStreakClick"
+        />
+
+        <!-- 2. 本周健身与运动能量卡片 -->
+        <WorkoutCard
+          :week-count="4"
+          :energy-percent="82"
+          :tags="['胸肩塑形', '有氧燃脂', '有氧燃脂']"
+          @click-detail="onWorkoutDetail"
+        />
+
+        <!-- 3. 饮食和热量卡片 -->
+        <DietCard
+          :current-calories="1450"
+          :target-calories="1800"
+          :deficit-text="'热量缺口状态'"
+          @click-detail="onDietDetail"
+          @quick-add="onQuickAddMeal"
+        />
+
+        <!-- 4. AI 教练卡片 -->
+        <AiCoachCard
+          :message="'今日热量缺口合理！晚餐建议适量增加蛋白质'"
+          @click-detail="onAiCoachDetail"
+          @ask-coach="onAskCoach"
+        />
+
+        <!-- 底部额外间距，避免内容被 TabBar 遮挡 -->
+        <view class="bottom-spacer"></view>
+      </view>
+    </scroll-view>
+
+    <!-- 5. 底部高保真导航栏 -->
+    <BottomTabBar />
+  </view>
+</template>
+
+<script setup lang="ts">
+import HomeHeader from './components/HomeHeader.vue'
+import WorkoutCard from './components/WorkoutCard.vue'
+import DietCard from './components/DietCard.vue'
+import AiCoachCard from './components/AiCoachCard.vue'
+import BottomTabBar from './components/BottomTabBar.vue'
+
+const onUserClick = () => {
+  uni.showToast({
+    title: '点击了个人信息',
+    icon: 'none',
+  })
+}
+
+const onStreakClick = () => {
+  // 处理连续打卡点击
+}
+
+const onWorkoutDetail = () => {
+  uni.showToast({
+    title: '正在进入本周健身详情...',
+    icon: 'none',
+  })
+}
+
+const onDietDetail = () => {
+  uni.showToast({
+    title: '正在进入饮食热量详情...',
+    icon: 'none',
+  })
+}
+
+const onQuickAddMeal = (meal: string) => {
+  console.log('快速添加:', meal)
+}
+
+const onAiCoachDetail = () => {
+  uni.showToast({
+    title: '正在进入 AI 教练面板...',
+    icon: 'none',
+  })
+}
+
+const onAskCoach = () => {
+  console.log('咨询 AI 教练')
+}
+</script>
+
+<style scoped>
+.page-container {
+  min-height: 100vh;
+  background-color: #F7F8FA;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部状态栏自适应 */
+.status-bar-placeholder {
+  height: env(safe-area-inset-top);
+  min-height: 48rpx;
+  background-color: #F7F8FA;
+}
+
+.scroll-content {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.inner-padding {
+  padding: 16rpx 28rpx 40rpx 28rpx;
+}
+
+.bottom-spacer {
+  height: 60rpx;
+}
+</style>
