@@ -10,6 +10,7 @@ export interface DayStatus {
   dayLabel: string;
   completed: boolean;
   percent: number; // 0 - 100
+  bodyPart?: string; // 当天训练部位，如 "胸", "背", "腿"
 }
 
 export interface WorkoutData {

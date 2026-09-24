@@ -4,45 +4,39 @@
     <view class="card-header">
       <text class="title">本周已练 <text class="highlight">{{ weekCount }}</text> 次</text>
       <view class="header-link">
-        <text class="link-text">运动能量</text>
+        <text class="link-text">详细计划</text>
         <text class="arrow">›</text>
       </view>
     </view>
 
-    <!-- 中间图表区：7天柱状图 + 运动能量环 -->
-    <view class="chart-content">
-      <!-- 7天打卡柱状图 -->
-      <view class="days-column-group">
-        <view
-          v-for="(item, index) in days"
-          :key="index"
-          class="day-col"
-        >
-          <!-- 柱子槽 -->
-          <view class="bar-track">
-            <!-- 激活高亮柱段 -->
-            <view
-              v-if="item.completed"
-              class="bar-fill"
-              :style="{ height: item.percent + '%' }"
-            ></view>
-          </view>
-          <!-- 日期文字 -->
-          <text
-            class="day-label"
-            :class="{ 'day-label-active': item.completed }"
-          >{{ item.dayLabel }}</text>
-        </view>
-      </view>
+    <!-- 7天圆形打卡状态 -->
+    <view class="days-circle-group">
+      <view
+        v-for="(item, index) in days"
+        :key="index"
+        class="day-col"
+      >
+        <!-- 训练部位标签（仅已完成的天显示） -->
+        <text
+          v-if="item.completed && item.bodyPart"
+          class="body-part-label"
+        >{{ item.bodyPart }}</text>
+        <view v-else class="body-part-placeholder"></view>
 
-      <!-- 右侧运动能量发光环 -->
-      <view class="energy-ring-wrapper">
-        <view class="energy-glow-ring">
-          <view class="ring-center">
-            <text class="ring-title">运动</text>
-            <text class="ring-sub">能量</text>
-          </view>
+        <!-- 圆形打卡状态圈 -->
+        <view
+          class="circle-badge"
+          :class="{ 'circle-badge-active': item.completed }"
+        >
+          <text v-if="item.completed" class="check-icon">✓</text>
+          <view v-else class="circle-dot"></view>
         </view>
+
+        <!-- 日期文字 -->
+        <text
+          class="day-label"
+          :class="{ 'day-label-active': item.completed }"
+        >{{ item.dayLabel }}</text>
       </view>
     </view>
 
@@ -65,23 +59,21 @@ import type { DayStatus } from '../types'
 interface Props {
   weekCount?: number
   days?: DayStatus[]
-  energyPercent?: number
   tags?: string[]
 }
 
 withDefaults(defineProps<Props>(), {
   weekCount: 4,
   days: () => [
-    { dayLabel: '周', completed: true, percent: 55 },
-    { dayLabel: '周', completed: true, percent: 75 },
-    { dayLabel: '期', completed: true, percent: 90 },
-    { dayLabel: '周', completed: true, percent: 65 },
-    { dayLabel: '五', completed: true, percent: 85 },
+    { dayLabel: '一', completed: true, percent: 100, bodyPart: '胸' },
+    { dayLabel: '二', completed: true, percent: 100, bodyPart: '背' },
+    { dayLabel: '三', completed: true, percent: 100, bodyPart: '腿' },
+    { dayLabel: '四', completed: true, percent: 100, bodyPart: '肩' },
+    { dayLabel: '五', completed: false, percent: 0 },
     { dayLabel: '六', completed: false, percent: 0 },
     { dayLabel: '日', completed: false, percent: 0 },
   ],
-  energyPercent: 82,
-  tags: () => ['胸肩塑形', '有氧燃脂', '有氧燃脂'],
+  tags: () => ['胸肩塑形', '有氧燃脂'],
 })
 
 const emit = defineEmits<{
@@ -147,20 +139,13 @@ const handleCardClick = () => {
 }
 
 /* 图表区 */
-.chart-content {
+.days-circle-group {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 36rpx;
-  padding: 0 10rpx;
-}
-
-.days-column-group {
-  display: flex;
-  flex-direction: row;
+  justify-content: space-around;
   align-items: flex-end;
-  gap: 18rpx;
+  margin-top: 28rpx;
+  padding: 0 4rpx;
 }
 
 .day-col {
@@ -169,82 +154,60 @@ const handleCardClick = () => {
   align-items: center;
 }
 
-.bar-track {
-  position: relative;
-  width: 22rpx;
-  height: 130rpx;
-  background: #EEF2F6;
-  border-radius: 20rpx;
-  overflow: hidden;
-  display: flex;
-  align-items: flex-end;
+/* 训练部位标签 */
+.body-part-label {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #67C23A;
+  margin-bottom: 10rpx;
+  line-height: 1;
 }
 
-.bar-fill {
-  width: 100%;
-  background: linear-gradient(180deg, #8EE446 0%, #70C536 100%);
-  border-radius: 20rpx;
-  transition: height 0.5s ease-out;
+.body-part-placeholder {
+  height: 20rpx;
+  margin-bottom: 10rpx;
+}
+
+.circle-badge {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  background: #EEF2F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+}
+
+.circle-badge-active {
+  background: linear-gradient(135deg, #8EE446 0%, #67C23A 100%);
+  box-shadow: 0 4rpx 14rpx rgba(116, 192, 67, 0.45);
+}
+
+.check-icon {
+  color: #FFFFFF;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.circle-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: #CBD3DC;
 }
 
 .day-label {
   font-size: 22rpx;
   color: #A0A5AB;
   font-weight: 600;
-  margin-top: 14rpx;
+  margin-top: 12rpx;
 }
 
 .day-label-active {
-  color: #555A60;
-}
-
-/* 右侧发光能量环 */
-.energy-ring-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-right: 12rpx;
-}
-
-.energy-glow-ring {
-  width: 154rpx;
-  height: 154rpx;
-  border-radius: 50%;
-  background: conic-gradient(
-    #8FE342 0deg,
-    #B2F266 220deg,
-    #70C635 300deg,
-    #E8F6DC 300deg 360deg
-  );
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 24rpx rgba(143, 227, 66, 0.45);
-}
-
-.ring-center {
-  width: 114rpx;
-  height: 114rpx;
-  border-radius: 50%;
-  background: #FFFFFF;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.ring-title {
-  font-size: 24rpx;
-  font-weight: 800;
   color: #1A1A1A;
-  line-height: 1.2;
-}
-
-.ring-sub {
-  font-size: 24rpx;
-  font-weight: 800;
-  color: #1A1A1A;
-  line-height: 1.2;
+  font-weight: 700;
 }
 
 /* 底部标签 */
