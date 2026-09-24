@@ -15,11 +15,10 @@
           @click-streak="onStreakClick"
         />
 
-        <!-- 2. 本周健身与运动能量卡片 -->
+        <!-- 2. 本周健身与打卡卡片 -->
         <WorkoutCard
           :week-count="4"
-          :energy-percent="82"
-          :tags="['胸肩塑形', '有氧燃脂', '有氧燃脂']"
+          :tags="['胸肩塑形', '有氧燃脂']"
           @click-detail="onWorkoutDetail"
         />
 
@@ -45,7 +44,7 @@
     </scroll-view>
 
     <!-- 5. 底部高保真导航栏 -->
-    <BottomTabBar />
+    <BottomTabBar current="home" />
   </view>
 </template>
 
@@ -54,46 +53,44 @@ import HomeHeader from './components/HomeHeader.vue'
 import WorkoutCard from './components/WorkoutCard.vue'
 import DietCard from './components/DietCard.vue'
 import AiCoachCard from './components/AiCoachCard.vue'
-import BottomTabBar from './components/BottomTabBar.vue'
+import BottomTabBar from '../../components/BottomTabBar.vue'
 
 const onUserClick = () => {
-  uni.showToast({
-    title: '点击了个人信息',
-    icon: 'none',
+  uni.switchTab({
+    url: '/pages/profile/index',
   })
 }
 
 const onStreakClick = () => {
-  // 处理连续打卡点击
+  // 打卡徽章点击
 }
 
 const onWorkoutDetail = () => {
-  uni.showToast({
-    title: '正在进入本周健身详情...',
-    icon: 'none',
+  uni.switchTab({
+    url: '/pages/workout/index',
   })
 }
 
 const onDietDetail = () => {
-  uni.showToast({
-    title: '正在进入饮食热量详情...',
-    icon: 'none',
+  uni.switchTab({
+    url: '/pages/diet/index',
   })
 }
 
 const onQuickAddMeal = (meal: string) => {
-  console.log('快速添加:', meal)
+  console.log('快速添加餐次:', meal)
 }
 
 const onAiCoachDetail = () => {
-  uni.showToast({
-    title: '正在进入 AI 教练面板...',
-    icon: 'none',
+  uni.switchTab({
+    url: '/pages/ai-coach/index',
   })
 }
 
 const onAskCoach = () => {
-  console.log('咨询 AI 教练')
+  uni.switchTab({
+    url: '/pages/ai-coach/index',
+  })
 }
 </script>
 
