@@ -1,10 +1,38 @@
-﻿{
+{
 	"pages": [
 		{
 			"path": "pages/index/index",
 			"style": {
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "豆丁健身"
+			}
+		},
+		{
+			"path": "pages/workout/index",
+			"style": {
+				"navigationBarTitleText": "健身记录",
+				"navigationBarBackgroundColor": "#F7F8FA"
+			}
+		},
+		{
+			"path": "pages/diet/index",
+			"style": {
+				"navigationBarTitleText": "饮食记录",
+				"navigationBarBackgroundColor": "#F7F8FA"
+			}
+		},
+		{
+			"path": "pages/ai-coach/index",
+			"style": {
+				"navigationBarTitleText": "AI 教练",
+				"navigationBarBackgroundColor": "#F7F8FA"
+			}
+		},
+		{
+			"path": "pages/profile/index",
+			"style": {
+				"navigationBarTitleText": "个人中心",
+				"navigationBarBackgroundColor": "#F7F8FA"
 			}
 		}
 	],
