@@ -11,13 +11,11 @@
         </view>
       </view>
     </scroll-view>
-    <!-- 底部导航栏 -->
-    <BottomTabBar current="ai" />
   </view>
 </template>
 
 <script setup lang="ts">
-import BottomTabBar from '../../components/BottomTabBar.vue'
+// AI 智能教练页面入口
 </script>
 
 <style scoped>

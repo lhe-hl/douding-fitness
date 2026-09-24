@@ -41,5 +41,43 @@
 		"navigationBarTitleText": "豆丁健身",
 		"navigationBarBackgroundColor": "#F7F8FA",
 		"backgroundColor": "#F7F8FA"
+	},
+	"tabBar": {
+		"color": "#8E8E93",
+		"selectedColor": "#74C043",
+		"backgroundColor": "#FFFFFF",
+		"borderStyle": "white",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "static/tabbar/home.png",
+				"selectedIconPath": "static/tabbar/home-active.png"
+			},
+			{
+				"pagePath": "pages/workout/index",
+				"text": "健身",
+				"iconPath": "static/tabbar/workout.png",
+				"selectedIconPath": "static/tabbar/workout-active.png"
+			},
+			{
+				"pagePath": "pages/diet/index",
+				"text": "饮食",
+				"iconPath": "static/tabbar/diet.png",
+				"selectedIconPath": "static/tabbar/diet-active.png"
+			},
+			{
+				"pagePath": "pages/ai-coach/index",
+				"text": "AI",
+				"iconPath": "static/tabbar/ai.png",
+				"selectedIconPath": "static/tabbar/ai-active.png"
+			},
+			{
+				"pagePath": "pages/profile/index",
+				"text": "我的",
+				"iconPath": "static/tabbar/profile.png",
+				"selectedIconPath": "static/tabbar/profile-active.png"
+			}
+		]
 	}
 }

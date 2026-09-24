@@ -38,13 +38,10 @@
           @ask-coach="onAskCoach"
         />
 
-        <!-- 底部额外间距，避免内容被 TabBar 遮挡 -->
+        <!-- 底部空间 -->
         <view class="bottom-spacer"></view>
       </view>
     </scroll-view>
-
-    <!-- 5. 底部高保真导航栏 -->
-    <BottomTabBar current="home" />
   </view>
 </template>
 
@@ -53,7 +50,6 @@ import HomeHeader from './components/HomeHeader.vue'
 import WorkoutCard from './components/WorkoutCard.vue'
 import DietCard from './components/DietCard.vue'
 import AiCoachCard from './components/AiCoachCard.vue'
-import BottomTabBar from '../../components/BottomTabBar.vue'
 
 const onUserClick = () => {
   uni.switchTab({
@@ -120,6 +116,6 @@ const onAskCoach = () => {
 }
 
 .bottom-spacer {
-  height: 60rpx;
+  height: 30rpx;
 }
 </style>

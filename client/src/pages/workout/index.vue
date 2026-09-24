@@ -11,13 +11,11 @@
         </view>
       </view>
     </scroll-view>
-    <!-- 底部导航栏 -->
-    <BottomTabBar current="workout" />
   </view>
 </template>
 
 <script setup lang="ts">
-import BottomTabBar from '../../components/BottomTabBar.vue'
+// 健身记录页面入口
 </script>
 
 <style scoped>
