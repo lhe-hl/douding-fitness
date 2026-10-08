@@ -6,7 +6,7 @@
     <!-- 可滚动主体内容 -->
     <scroll-view scroll-y class="scroll-content" :show-scrollbar="false">
       <view class="inner-container">
-        <!-- 1. 月度打卡日历卡片 (自动读取当前真实年月、当天圆圈高亮、部位徽章) -->
+        <!-- 1. 月度打卡日历卡片 (真实接口数据渲染) -->
         <WorkoutCalendar
           :year="currentYear"
           :month="currentMonth"
@@ -17,7 +17,7 @@
           @next-month="handleNextMonth"
         />
 
-        <!-- 2. 选中日期训练详情卡片 (3列：时长 / 部位 / 状态) -->
+        <!-- 2. 选中日期训练详情卡片 (真实接口数据渲染) -->
         <WorkoutDetailCard
           :detail="currentDetail"
           @click-record="openAddModal"
@@ -36,7 +36,7 @@
       </view>
     </view>
 
-    <!-- 4. 新增打卡半屏抽屉弹窗 -->
+    <!-- 4. 新增打卡半屏抽屉弹窗 (真实接口提交) -->
     <AddWorkoutModal
       v-model:visible="modalVisible"
       :default-date="selectedDateStr"
@@ -46,13 +46,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import WorkoutCalendar from './components/WorkoutCalendar.vue'
 import WorkoutDetailCard from './components/WorkoutDetailCard.vue'
 import AddWorkoutModal from './components/AddWorkoutModal.vue'
 import type { DayWorkoutDetail, AddWorkoutForm } from './types'
+import { getWorkoutMonth, getWorkoutDay, saveWorkout } from '../../api/workout'
+import { loginDev } from '../../api/user'
+import { getToken } from '../../api/request'
+import { useWorkoutStore } from '../../stores/workout'
 
-// 自动读取用户设备/手机本地当前真实时间（纯前端，无须后端）
+// 自动读取用户设备/手机本地当前真实时间
 const now = new Date()
 const currentYear = ref(now.getFullYear())
 const currentMonth = ref(now.getMonth() + 1)
@@ -64,103 +69,107 @@ const formatDate = (y: number, m: number, d: number) => `${y}-${formatZero(m)}-$
 // 手机本地真实今日日期字符串 (如 "2026-10-08")
 const todayDateStr = formatDate(now.getFullYear(), now.getMonth() + 1, now.getDate())
 
-// 页面默认直接选中今天！
+// 页面默认选中今天
 const selectedDateStr = ref(todayDateStr)
 
 // 弹窗可见性
 const modalVisible = ref(false)
 
-// 初始化打卡 Mock 数据（兼顾手机当前月份与历史原型数据）
-function initMockWorkouts() {
-  const map: Record<string, { bodyPartBadge: string; detail: DayWorkoutDetail }> = {}
+// 真实打卡日历数据字典（纯后端驱动，零死数据）
+const workoutMap = ref<Record<string, { bodyPartBadge: string }>>({})
 
-  // 1. 今天打卡：肩部 & 手臂
-  map[todayDateStr] = {
-    bodyPartBadge: '肩',
-    detail: { date: todayDateStr, durationMinutes: 60, bodyPartsTitle: '肩部 & 手臂', status: 'COMPLETED' },
-  }
+// 当前选中日期的详细训练记录 (来自后端 GET /api/workout/day)
+const currentDetail = ref<DayWorkoutDetail | null>(null)
 
-  // 2. 动态生成最近几天的打卡数据，保证任何月份打开日历都有漂亮的打卡标签
-  const addRelativeDay = (offsetDays: number, badge: string, title: string, duration: number) => {
-    const target = new Date(now.getTime() + offsetDays * 24 * 60 * 60 * 1000)
-    const str = formatDate(target.getFullYear(), target.getMonth() + 1, target.getDate())
-    map[str] = {
-      bodyPartBadge: badge,
-      detail: { date: str, durationMinutes: duration, bodyPartsTitle: title, status: 'COMPLETED' },
+// 异步拉取当前月份的真实打卡日历数据
+const loadMonthData = async () => {
+  try {
+    const list = await getWorkoutMonth(currentYear.value, currentMonth.value)
+    const map: Record<string, { bodyPartBadge: string }> = {}
+    if (Array.isArray(list)) {
+      list.forEach((item) => {
+        map[item.date] = {
+          bodyPartBadge: item.bodyPartBadge,
+        }
+      })
     }
+    workoutMap.value = map
+  } catch (err) {
+    console.error('获取月度打卡失败:', err)
   }
-
-  addRelativeDay(-1, '胸', '胸部塑形与卧推', 45)
-  addRelativeDay(-2, '背', '高位下拉与划船', 60)
-  addRelativeDay(-4, '腿', '深蹲与股四头', 75)
-  addRelativeDay(-5, '肩', '三角肌专项轰炸', 50)
-  addRelativeDay(-7, '腰', '核心力量激活', 40)
-  addRelativeDay(-8, '胸', '上胸与夹胸强化', 60)
-  addRelativeDay(-10, '背', '背部厚度强化', 60)
-  addRelativeDay(-12, '腿', '臀腿综合力量', 70)
-
-  // 3. 保留原型图 2023年11月的历史数据，翻页到 2023-11 时依然能看到
-  const protoRecords: Record<string, [string, string, number]> = {
-    '2023-11-01': ['胸', '胸部塑形', 45],
-    '2023-11-02': ['肩', '肩部 & 手臂', 60],
-    '2023-11-04': ['肩', '肩部专项', 50],
-    '2023-11-05': ['胸', '上胸塑形', 60],
-    '2023-11-07': ['胸', '胸肌夹胸', 50],
-    '2023-11-10': ['胸', '胸部力量', 60],
-    '2023-11-12': ['肩', '三角肌前中束', 45],
-    '2023-11-13': ['胸', '卧推强化', 60],
-    '2023-11-14': ['肩', '肩袖稳定与推举', 50],
-    '2023-11-15': ['背', '高位下拉与引体', 65],
-    '2023-11-16': ['背', '划船与背阔肌', 60],
-    '2023-11-18': ['腿', '深蹲与股四头', 75],
-    '2023-11-19': ['腿', '臀腿塑形', 60],
-    '2023-11-21': ['背', '背部厚度强化', 60],
-    '2023-11-22': ['腰', '核心与腹部线条', 40],
-    '2023-11-23': ['腰', '核心肌群激活', 45],
-  }
-  for (const [dStr, [b, t, dur]] of Object.entries(protoRecords)) {
-    if (!map[dStr]) {
-      map[dStr] = {
-        bodyPartBadge: b,
-        detail: { date: dStr, durationMinutes: dur, bodyPartsTitle: t, status: 'COMPLETED' },
-      }
-    }
-  }
-
-  return map
 }
 
-// 训练打卡响应式数据字典
-const workoutMap = ref(initMockWorkouts())
+// 异步拉取指定日期的训练明细
+const loadDayDetail = async (dateStr: string) => {
+  try {
+    const res = await getWorkoutDay(dateStr)
+    if (res) {
+      currentDetail.value = {
+        recordId: res.id,
+        date: res.date,
+        durationMinutes: res.durationMinutes,
+        bodyPartsTitle: res.bodyPartsTitle,
+        status: res.status,
+        notes: res.notes,
+      }
+    } else {
+      currentDetail.value = null
+    }
+  } catch (err) {
+    console.error('获取单日明细失败:', err)
+    currentDetail.value = null
+  }
+}
 
-// 计算当前选中日期的详情数据
-const currentDetail = computed<DayWorkoutDetail | null>(() => {
-  const item = workoutMap.value[selectedDateStr.value]
-  return item ? item.detail : null
+// 页面初始化：确保有 Token，然后拉取真实数据库数据
+const initPageData = async () => {
+  // 开发模式：如果本地尚未存储 Token，自动静默登录测试账号
+  if (!getToken()) {
+    await loginDev('test-user-001')
+  }
+  await Promise.all([
+    loadMonthData(),
+    loadDayDetail(selectedDateStr.value),
+  ])
+}
+
+onMounted(() => {
+  initPageData()
+})
+
+onShow(() => {
+  // 切回页面时静默刷新最新数据
+  if (getToken()) {
+    loadMonthData()
+    loadDayDetail(selectedDateStr.value)
+  }
 })
 
 // 选中日期切换
-const handleSelectDate = (dateStr: string) => {
+const handleSelectDate = async (dateStr: string) => {
   selectedDateStr.value = dateStr
+  await loadDayDetail(dateStr)
 }
 
 // 切换月份
-const handlePrevMonth = () => {
+const handlePrevMonth = async () => {
   if (currentMonth.value === 1) {
     currentYear.value--
     currentMonth.value = 12
   } else {
     currentMonth.value--
   }
+  await loadMonthData()
 }
 
-const handleNextMonth = () => {
+const handleNextMonth = async () => {
   if (currentMonth.value === 12) {
     currentYear.value++
     currentMonth.value = 1
   } else {
     currentMonth.value++
   }
+  await loadMonthData()
 }
 
 // 唤起添加弹窗
@@ -168,26 +177,36 @@ const openAddModal = () => {
   modalVisible.value = true
 }
 
-// 保存打卡
-const handleSaveWorkout = (form: AddWorkoutForm) => {
-  const badgeChar = extractBadge(form.bodyParts.join(''))
-  const title = form.bodyParts.join(' & ')
-
-  workoutMap.value[form.date] = {
-    bodyPartBadge: badgeChar,
-    detail: {
+// 真实保存打卡到后端数据库
+const handleSaveWorkout = async (form: AddWorkoutForm) => {
+  try {
+    const title = form.bodyParts.join(' & ')
+    await saveWorkout({
       date: form.date,
-      durationMinutes: form.duration,
-      bodyPartsTitle: title,
-      status: 'COMPLETED',
+      duration: form.duration,
+      bodyParts: title,
       notes: form.notes,
-    },
-  }
+    })
 
-  uni.showToast({
-    title: '打卡成功！',
-    icon: 'success',
-  })
+    uni.showToast({
+      title: '打卡成功！',
+      icon: 'success',
+    })
+
+    // 重新拉取真实日历数据与当天明细
+    await Promise.all([
+      loadMonthData(),
+      loadDayDetail(form.date),
+    ])
+
+    // 同步到 Pinia workoutStore
+    const workoutStore = useWorkoutStore()
+    const badgeChar = extractBadge(title)
+    const dayOfWeek = (new Date(form.date).getDay() + 6) % 7 // 周一对应索引 0
+    workoutStore.recordWorkout(dayOfWeek, badgeChar)
+  } catch (err) {
+    console.error('保存打卡失败:', err)
+  }
 }
 
 // 简字提取辅助
