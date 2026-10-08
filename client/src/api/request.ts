@@ -1,6 +1,6 @@
 // 统一网络请求层与双拦截器封装
 
-const BASE_URL = 'http://localhost:3000/api'
+const BASE_URL = 'http://127.0.0.1:3000/api'
 const TOKEN_KEY = 'douding_auth_token'
 
 // 401 防抖标记，避免多个接口同时 401 弹出重复提示
@@ -144,6 +144,7 @@ export function request<T = any>(options: RequestOptions): Promise<T> {
 
       // 网络链路彻底失败 (断网 / 跨域 / 域名无法访问)
       fail: (err) => {
+        console.error('❌ [网络请求失败 uni.request fail]:', fullUrl, err)
         uni.showToast({
           title: '服务器连接异常，请检查网络',
           icon: 'none',

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="workout-page">
     <!-- 顶部状态栏占位 -->
     <view class="status-bar-placeholder"></view>
@@ -123,14 +123,18 @@ const loadDayDetail = async (dateStr: string) => {
 
 // 页面初始化：确保有 Token，然后拉取真实数据库数据
 const initPageData = async () => {
-  // 开发模式：如果本地尚未存储 Token，自动静默登录测试账号
-  if (!getToken()) {
-    await loginDev('test-user-001')
+  try {
+    // 开发模式：如果本地尚未存储 Token，自动静默登录测试账号
+    if (!getToken()) {
+      await loginDev('test-user-001')
+    }
+    await Promise.all([
+      loadMonthData(),
+      loadDayDetail(selectedDateStr.value),
+    ])
+  } catch (err) {
+    console.error('初始化页面数据失败:', err)
   }
-  await Promise.all([
-    loadMonthData(),
-    loadDayDetail(selectedDateStr.value),
-  ])
 }
 
 onMounted(() => {
