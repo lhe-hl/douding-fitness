@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import authRoutes from './auth.routes';
+import workoutRoutes from './workout.routes';
 
 const router = Router();
 
@@ -14,5 +15,8 @@ router.get('/health', (req: Request, res: Response) => {
 
 // 鉴权与登录路由 (/api/auth)
 router.use('/auth', authRoutes);
+
+// 健身打卡记录路由 (/api/workout)
+router.use('/workout', workoutRoutes);
 
 export default router;
