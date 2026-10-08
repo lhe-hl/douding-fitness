@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import authRoutes from './auth.routes';
 
 const router = Router();
 
@@ -10,5 +11,8 @@ router.get('/health', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// 鉴权与登录路由 (/api/auth)
+router.use('/auth', authRoutes);
 
 export default router;
