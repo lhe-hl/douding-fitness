@@ -6,7 +6,7 @@
     <!-- 可滚动主体内容 -->
     <scroll-view scroll-y class="scroll-content" :show-scrollbar="false">
       <view class="inner-container">
-        <!-- 1. 月度打卡日历卡片 (含年月切换、7x6网格、部位小胶囊徽章) -->
+        <!-- 1. 月度打卡日历卡片 (自动读取当前真实年月、当天圆圈高亮、部位徽章) -->
         <WorkoutCalendar
           :year="currentYear"
           :month="currentMonth"
@@ -52,83 +52,86 @@ import WorkoutDetailCard from './components/WorkoutDetailCard.vue'
 import AddWorkoutModal from './components/AddWorkoutModal.vue'
 import type { DayWorkoutDetail, AddWorkoutForm } from './types'
 
-// 年月状态（默认对应原型图的 2023年11月）
-const currentYear = ref(2023)
-const currentMonth = ref(11)
+// 自动读取用户设备/手机本地当前真实时间（纯前端，无须后端）
+const now = new Date()
+const currentYear = ref(now.getFullYear())
+const currentMonth = ref(now.getMonth() + 1)
 
-// 当前选中的日期（默认对应原型图高亮的 2023-11-02）
-const selectedDateStr = ref('2023-11-02')
+// 格式化日期辅助函数 YYYY-MM-DD
+const formatZero = (n: number) => (n < 10 ? `0${n}` : `${n}`)
+const formatDate = (y: number, m: number, d: number) => `${y}-${formatZero(m)}-${formatZero(d)}`
+
+// 手机本地真实今日日期字符串 (如 "2026-10-08")
+const todayDateStr = formatDate(now.getFullYear(), now.getMonth() + 1, now.getDate())
+
+// 页面默认直接选中今天！
+const selectedDateStr = ref(todayDateStr)
 
 // 弹窗可见性
 const modalVisible = ref(false)
 
-// 训练打卡本地响应式数据字典（完全契合原型图）
-const workoutMap = ref<Record<string, { bodyPartBadge: string; detail: DayWorkoutDetail }>>({
-  '2023-11-01': {
-    bodyPartBadge: '胸',
-    detail: { date: '2023-11-01', durationMinutes: 45, bodyPartsTitle: '胸部塑形', status: 'COMPLETED' },
-  },
-  '2023-11-02': {
+// 初始化打卡 Mock 数据（兼顾手机当前月份与历史原型数据）
+function initMockWorkouts() {
+  const map: Record<string, { bodyPartBadge: string; detail: DayWorkoutDetail }> = {}
+
+  // 1. 今天打卡：肩部 & 手臂
+  map[todayDateStr] = {
     bodyPartBadge: '肩',
-    detail: { date: '2023-11-02', durationMinutes: 60, bodyPartsTitle: '肩部 & 手臂', status: 'COMPLETED' },
-  },
-  '2023-11-04': {
-    bodyPartBadge: '肩',
-    detail: { date: '2023-11-04', durationMinutes: 50, bodyPartsTitle: '肩部专项', status: 'COMPLETED' },
-  },
-  '2023-11-05': {
-    bodyPartBadge: '胸',
-    detail: { date: '2023-11-05', durationMinutes: 60, bodyPartsTitle: '上胸塑形', status: 'COMPLETED' },
-  },
-  '2023-11-07': {
-    bodyPartBadge: '胸',
-    detail: { date: '2023-11-07', durationMinutes: 50, bodyPartsTitle: '胸肌夹胸', status: 'COMPLETED' },
-  },
-  '2023-11-10': {
-    bodyPartBadge: '胸',
-    detail: { date: '2023-11-10', durationMinutes: 60, bodyPartsTitle: '胸部力量', status: 'COMPLETED' },
-  },
-  '2023-11-12': {
-    bodyPartBadge: '肩',
-    detail: { date: '2023-11-12', durationMinutes: 45, bodyPartsTitle: '三角肌前中束', status: 'COMPLETED' },
-  },
-  '2023-11-13': {
-    bodyPartBadge: '胸',
-    detail: { date: '2023-11-13', durationMinutes: 60, bodyPartsTitle: '卧推强化', status: 'COMPLETED' },
-  },
-  '2023-11-14': {
-    bodyPartBadge: '肩',
-    detail: { date: '2023-11-14', durationMinutes: 50, bodyPartsTitle: '肩袖稳定与推举', status: 'COMPLETED' },
-  },
-  '2023-11-15': {
-    bodyPartBadge: '背',
-    detail: { date: '2023-11-15', durationMinutes: 65, bodyPartsTitle: '高位下拉与引体', status: 'COMPLETED' },
-  },
-  '2023-11-16': {
-    bodyPartBadge: '背',
-    detail: { date: '2023-11-16', durationMinutes: 60, bodyPartsTitle: '划船与背阔肌', status: 'COMPLETED' },
-  },
-  '2023-11-18': {
-    bodyPartBadge: '腿',
-    detail: { date: '2023-11-18', durationMinutes: 75, bodyPartsTitle: '深蹲与股四头', status: 'COMPLETED' },
-  },
-  '2023-11-19': {
-    bodyPartBadge: '腿',
-    detail: { date: '2023-11-19', durationMinutes: 60, bodyPartsTitle: '臀腿塑形', status: 'COMPLETED' },
-  },
-  '2023-11-21': {
-    bodyPartBadge: '背',
-    detail: { date: '2023-11-21', durationMinutes: 60, bodyPartsTitle: '背部厚度强化', status: 'COMPLETED' },
-  },
-  '2023-11-22': {
-    bodyPartBadge: '腰',
-    detail: { date: '2023-11-22', durationMinutes: 40, bodyPartsTitle: '核心与腹部线条', status: 'COMPLETED' },
-  },
-  '2023-11-23': {
-    bodyPartBadge: '腰',
-    detail: { date: '2023-11-23', durationMinutes: 45, bodyPartsTitle: '核心肌群激活', status: 'COMPLETED' },
-  },
-})
+    detail: { date: todayDateStr, durationMinutes: 60, bodyPartsTitle: '肩部 & 手臂', status: 'COMPLETED' },
+  }
+
+  // 2. 动态生成最近几天的打卡数据，保证任何月份打开日历都有漂亮的打卡标签
+  const addRelativeDay = (offsetDays: number, badge: string, title: string, duration: number) => {
+    const target = new Date(now.getTime() + offsetDays * 24 * 60 * 60 * 1000)
+    const str = formatDate(target.getFullYear(), target.getMonth() + 1, target.getDate())
+    map[str] = {
+      bodyPartBadge: badge,
+      detail: { date: str, durationMinutes: duration, bodyPartsTitle: title, status: 'COMPLETED' },
+    }
+  }
+
+  addRelativeDay(-1, '胸', '胸部塑形与卧推', 45)
+  addRelativeDay(-2, '背', '高位下拉与划船', 60)
+  addRelativeDay(-4, '腿', '深蹲与股四头', 75)
+  addRelativeDay(-5, '肩', '三角肌专项轰炸', 50)
+  addRelativeDay(-7, '腰', '核心力量激活', 40)
+  addRelativeDay(-8, '胸', '上胸与夹胸强化', 60)
+  addRelativeDay(-10, '背', '背部厚度强化', 60)
+  addRelativeDay(-12, '腿', '臀腿综合力量', 70)
+
+  // 3. 保留原型图 2023年11月的历史数据，翻页到 2023-11 时依然能看到
+  const protoRecords: Record<string, [string, string, number]> = {
+    '2023-11-01': ['胸', '胸部塑形', 45],
+    '2023-11-02': ['肩', '肩部 & 手臂', 60],
+    '2023-11-04': ['肩', '肩部专项', 50],
+    '2023-11-05': ['胸', '上胸塑形', 60],
+    '2023-11-07': ['胸', '胸肌夹胸', 50],
+    '2023-11-10': ['胸', '胸部力量', 60],
+    '2023-11-12': ['肩', '三角肌前中束', 45],
+    '2023-11-13': ['胸', '卧推强化', 60],
+    '2023-11-14': ['肩', '肩袖稳定与推举', 50],
+    '2023-11-15': ['背', '高位下拉与引体', 65],
+    '2023-11-16': ['背', '划船与背阔肌', 60],
+    '2023-11-18': ['腿', '深蹲与股四头', 75],
+    '2023-11-19': ['腿', '臀腿塑形', 60],
+    '2023-11-21': ['背', '背部厚度强化', 60],
+    '2023-11-22': ['腰', '核心与腹部线条', 40],
+    '2023-11-23': ['腰', '核心肌群激活', 45],
+  }
+  for (const [dStr, [b, t, dur]] of Object.entries(protoRecords)) {
+    if (!map[dStr]) {
+      map[dStr] = {
+        bodyPartBadge: b,
+        detail: { date: dStr, durationMinutes: dur, bodyPartsTitle: t, status: 'COMPLETED' },
+      }
+    }
+  }
+
+  return map
+}
+
+// 训练打卡响应式数据字典
+const workoutMap = ref(initMockWorkouts())
 
 // 计算当前选中日期的详情数据
 const currentDetail = computed<DayWorkoutDetail | null>(() => {

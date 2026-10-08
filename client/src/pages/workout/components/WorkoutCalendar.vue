@@ -34,10 +34,11 @@
         }"
         @tap="handleSelectDay(day)"
       >
-        <!-- 日期数字（选中时呈现绿色光晕圆圈） -->
+        <!-- 日期数字（当天有专属圆圈，选中时呈现高光光晕圆圈） -->
         <view
           class="date-number-wrap"
           :class="{
+            'number-today': day.isToday && !day.isSelected,
             'number-active': day.isSelected,
           }"
         >
@@ -288,6 +289,17 @@ const handleNextMonth = () => {
   font-size: 28rpx;
   font-weight: 700;
   color: #1A1A1A;
+}
+
+/* 当天专属标记圆圈 (无论是否选中均有圆圈标识) */
+.number-today {
+  border: 2rpx solid #67C23A;
+  box-sizing: border-box;
+}
+
+.number-today .date-number {
+  color: #67C23A;
+  font-weight: 800;
 }
 
 /* 选中高亮状态：柔和绿底 + 绿色边框高光圈 */
