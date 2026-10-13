@@ -1,42 +1,72 @@
-# 豆丁健身 (douding-fitness) - 全栈微信小程序
+# 🏋️‍♂️ Douding Fitness (豆丁健身)
 
-全栈健身打卡、减脂饮食记录与 AI 智能减脂助手微信小程序。
+English | [简体中文](./README.zh-CN.md)
+
+**Douding Fitness** is a modern, full-stack WeChat Mini Program designed for workout tracking, diet & macro logging, and AI-powered fitness coaching. Built with a type-safe architecture from frontend to backend, it helps users systematically record strength training sessions, monitor daily caloric deficits, and receive personalized guidance from an AI coach.
 
 ---
 
-## 目录结构
+## ✨ Key Features
 
-```
+- 📅 **Workout Tracking**: Intuitive calendar view to log daily training sessions, target muscle groups, exercise sets, weights (kg), reps, and workout duration.
+- 🥗 **Diet & Macro Logging**: Track daily meals (Breakfast, Lunch, Dinner, Snacks) with calorie estimation, macronutrient breakdown (Protein, Carbs, Fat), and meal photo check-ins.
+- 🤖 **AI Fitness Coach**: Analyzes daily energy expenditure vs. caloric intake to calculate caloric deficits, offering tailored fat-loss advice and streaming Q&A for training plateaus.
+- 📊 **Body Profile Management**: Record and track personal body metrics including height, current weight, and target weight goals.
+
+---
+
+## 🛠️ Tech Stack
+
+### Client (Frontend)
+- **Framework**: [uni-app](https://uniapp.dcloud.io/) + [Vue 3](https://vuejs.org/) (`<script setup>` Composition API)
+- **Language**: TypeScript 5.x
+- **Build Tool**: Vite 5.x
+- **State Management**: Pinia
+- **UI Library**: Wot Design Uni
+
+### Server (Backend)
+- **Runtime & Framework**: Node.js + Express.js (TypeScript)
+- **ORM & Database**: Prisma ORM + SQLite
+- **Authentication**: Stateless JWT (JSON Web Token) + WeChat OAuth (`code2Session`)
+
+---
+
+## 📂 Project Structure
+
+```text
 douding-fitness/
-├── client/          # 前端小程序 (uni-app + Vue 3 + TS + Vite + Pinia + Wot Design Uni)
-├── server/          # 后端 API 服务 (Node.js + Express + TS + Prisma + SQLite)
-└── docs/            # 项目技术选型与规范文档
+├── client/          # Frontend Mini Program (uni-app + Vue 3 + TS + Vite + Pinia + Wot Design Uni)
+├── server/          # Backend API Service (Node.js + Express + TS + Prisma + SQLite)
+└── docs/            # Architecture, technical specifications & documentation
 ```
 
 ---
 
-## 常用命令
+## 🚀 Getting Started
 
-### 1. 前端小程序 (client)
+### 1. Frontend Mini Program (`client`)
 ```bash
 cd client
-pnpm dev:mp-weixin    # 启动开发监听与热更新 (输出至 dist/dev/mp-weixin)
-pnpm build:mp-weixin  # 生产打包
+pnpm install          # Install dependencies
+pnpm dev:mp-weixin    # Start dev server with HMR (outputs to dist/dev/mp-weixin)
+pnpm build:mp-weixin  # Build for production
 ```
 
-### 2. 后端服务 (server)
+### 2. Backend Service (`server`)
 ```bash
 cd server
-pnpm dev              # 启动本地开发服务 (http://localhost:3000)
-pnpm prisma:studio    # 打开本地数据库可视化后台
-pnpm build            # 编译 TypeScript
-pnpm start            # 运行编译后的生产服务
+pnpm install          # Install dependencies
+pnpm dev              # Start local dev server (http://localhost:3000)
+pnpm prisma:studio    # Open Prisma Studio (visual database management UI)
+pnpm build            # Compile TypeScript
+pnpm start            # Run compiled production server
 ```
 
 ---
 
-## 微信开发者工具预览说明
-1. 打开 **微信开发者工具**。
-2. 导入项目目录：`d:\douding-fitness\client\dist\dev\mp-weixin`。
-3. AppID 自动识别为：`wx606fc804e012e441`。
-4. 右上角「详情」->「本地设置」勾选 **“不校验合法域名、web-view、TLS版本以及HTTPS证书”**。
+## 📱 WeChat DevTools Preview Guide
+
+1. Open **WeChat DevTools (微信开发者工具)**.
+2. Import the compiled project directory: `client/dist/dev/mp-weixin`.
+3. The **AppID** will be automatically recognized as: `wx606fc804e012e441`.
+4. Go to top-right **Details (详情)** -> **Local Settings (本地设置)**, and check **"Do not verify valid domain names, web-view (business domain names), TLS versions and HTTPS certificates" (不校验合法域名、web-view、TLS版本以及HTTPS证书)**.
