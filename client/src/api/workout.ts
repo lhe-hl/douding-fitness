@@ -13,9 +13,9 @@ export interface DayWorkoutDetailResponse {
   date: string
   durationMinutes: number
   bodyPartsTitle: string
-  status: 'COMPLETED' | 'REST'
-  notes?: string
-  exercises?: Array<{
+  status: 'COMPLETED'
+  notes: string | null
+  exercises: Array<{
     id: string
     actionName: string
     sets: number
@@ -40,40 +40,44 @@ export interface SaveWorkoutPayload {
 /**
  * 1. 获取指定月份的训练打卡摘要列表 (日历渲染)
  */
-export function getWorkoutMonth(year: number, month: number) {
+export function getWorkoutMonth(year: number, month: number, silent = false) {
   return request<MonthWorkoutItem[]>({
     url: `/workout/month?year=${year}&month=${month}`,
     method: 'GET',
+    silent,
   })
 }
 
 /**
  * 2. 获取某一天的详细训练记录 (详情卡片)
  */
-export function getWorkoutDay(date: string) {
+export function getWorkoutDay(date: string, silent = false) {
   return request<DayWorkoutDetailResponse | null>({
     url: `/workout/day?date=${date}`,
     method: 'GET',
+    silent,
   })
 }
 
 /**
  * 3. 提交/保存训练打卡
  */
-export function saveWorkout(data: SaveWorkoutPayload) {
+export function saveWorkout(data: SaveWorkoutPayload, silent = false) {
   return request<DayWorkoutDetailResponse>({
     url: '/workout',
     method: 'POST',
     data,
+    silent,
   })
 }
 
 /**
  * 4. 删除指定训练记录
  */
-export function deleteWorkout(id: string) {
+export function deleteWorkout(id: string, silent = false) {
   return request<boolean>({
     url: `/workout/${id}`,
     method: 'DELETE',
+    silent,
   })
 }

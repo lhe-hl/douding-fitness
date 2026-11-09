@@ -1,33 +1,53 @@
 <template>
   <view class="detail-card">
-    <!-- 当天有打卡记录时的 3 列展示 -->
-    <view v-if="detail && detail.status === 'COMPLETED'" class="metrics-row">
-      <!-- 1. 运动时间 -->
-      <view class="metric-col">
-        <text class="col-label">运动时间</text>
-        <view class="value-wrap">
-          <text class="time-number">{{ detail.durationMinutes }}</text>
-          <text class="time-unit">min</text>
-        </view>
-      </view>
+    <view v-if="phase === 'loading'" class="state-block">
+      <text class="state-title">正在读取这一天</text>
+    </view>
 
-      <!-- 2. 训练内容 -->
-      <view class="metric-col content-col">
-        <text class="col-label">训练内容</text>
-        <text class="body-title">{{ detail.bodyPartsTitle }}</text>
+    <view v-else-if="phase === 'error'" class="state-row">
+      <view class="state-copy">
+        <text class="state-title">这次没读到训练</text>
+        <text class="state-sub">休息日不会显示成这样</text>
       </view>
-
-      <!-- 3. 训练状态 -->
-      <view class="metric-col status-col">
-        <text class="col-label">训练状态</text>
-        <view class="status-badge">
-          <text class="status-text">已完成</text>
-        </view>
+      <view class="quick-record-btn" @tap="emit('retry')">
+        <text class="btn-text">重试</text>
       </view>
     </view>
 
-    <!-- 当天无打卡记录时的休息态展示 -->
-    <view v-else class="empty-row" @tap="handleEmptyClick">
+    <view v-else-if="phase === 'ready' && detail" class="record-block">
+      <view class="metrics-row">
+        <view class="metric-col">
+          <text class="col-label">运动时间</text>
+          <view class="value-wrap">
+            <text class="time-number">{{ detail.durationMinutes }}</text>
+            <text class="time-unit">min</text>
+          </view>
+        </view>
+
+        <view class="metric-col content-col">
+          <text class="col-label">训练内容</text>
+          <text class="body-title">{{ detail.bodyPartsTitle }}</text>
+        </view>
+
+        <view class="metric-col status-col">
+          <text class="col-label">训练状态</text>
+          <view class="status-badge">
+            <text class="status-text">已完成</text>
+          </view>
+        </view>
+      </view>
+
+      <view v-if="detail.notes" class="notes-block">
+        <text class="notes-label">今日感受</text>
+        <text class="notes-text">{{ detail.notes }}</text>
+      </view>
+
+      <view class="delete-btn" @tap="emit('delete')">
+        <text class="delete-text">{{ deleting ? '删除中' : '删除这条记录' }}</text>
+      </view>
+    </view>
+
+    <view v-else class="empty-row" @tap="emit('record')">
       <view class="empty-left">
         <text class="empty-icon">☕</text>
         <view class="empty-text-wrap">
@@ -36,28 +56,31 @@
         </view>
       </view>
       <view class="quick-record-btn">
-        <text class="btn-text">补记打卡</text>
+        <text class="btn-text btn-text-rest">补记打卡</text>
       </view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import type { DayWorkoutDetail } from '../types'
+import type { DayWorkoutDetail, WorkoutDetailPhase } from '../types'
 
 interface Props {
+  phase: WorkoutDetailPhase
   detail?: DayWorkoutDetail | null
+  deleting?: boolean
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  detail: null,
+  deleting: false,
+})
 
 const emit = defineEmits<{
-  (e: 'click-record'): void
+  (e: 'record'): void
+  (e: 'retry'): void
+  (e: 'delete'): void
 }>()
-
-const handleEmptyClick = () => {
-  emit('click-record')
-}
 </script>
 
 <style scoped>
@@ -69,7 +92,35 @@ const handleEmptyClick = () => {
   box-shadow: 0 8rpx 28rpx rgba(0, 0, 0, 0.035);
 }
 
-/* 3 列指标横向排版 */
+.state-block,
+.state-row,
+.empty-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.state-copy,
+.empty-text-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.state-title,
+.empty-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #333333;
+}
+
+.state-sub,
+.empty-sub {
+  font-size: 22rpx;
+  color: #A0A5AB;
+  margin-top: 4rpx;
+}
+
 .metrics-row {
   display: flex;
   flex-direction: row;
@@ -143,12 +194,35 @@ const handleEmptyClick = () => {
   line-height: 1.2;
 }
 
-/* 休息日空状态展示 */
-.empty-row {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
+.notes-block {
+  margin-top: 28rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid #EEF2F6;
+}
+
+.notes-label {
+  font-size: 24rpx;
+  color: #8E8E93;
+  display: block;
+}
+
+.notes-text {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333333;
+  line-height: 1.45;
+}
+
+.delete-btn {
+  margin-top: 24rpx;
+}
+
+.delete-text {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #E05A4A;
 }
 
 .empty-left {
@@ -162,23 +236,6 @@ const handleEmptyClick = () => {
   font-size: 44rpx;
 }
 
-.empty-text-wrap {
-  display: flex;
-  flex-direction: column;
-}
-
-.empty-title {
-  font-size: 28rpx;
-  font-weight: 700;
-  color: #333333;
-}
-
-.empty-sub {
-  font-size: 22rpx;
-  color: #A0A5AB;
-  margin-top: 4rpx;
-}
-
 .quick-record-btn {
   background: #F4F6F9;
   padding: 12rpx 24rpx;
@@ -188,6 +245,10 @@ const handleEmptyClick = () => {
 .btn-text {
   font-size: 24rpx;
   font-weight: 700;
+  color: #74C043;
+}
+
+.btn-text-rest {
   color: #67C23A;
 }
 </style>

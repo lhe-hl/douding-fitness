@@ -1,34 +1,31 @@
 <template>
   <view v-if="visible" class="modal-root">
-    <!-- 遮罩背景 -->
     <view class="modal-mask" @tap="handleClose"></view>
 
-    <!-- 半屏抽屉容器 -->
     <view class="modal-sheet">
-      <!-- 顶部拖拽横条与标题 -->
+      <view v-if="saving" class="saving-shield"></view>
       <view class="sheet-header">
         <view class="header-drag-handle"></view>
         <view class="header-content">
-          <text class="sheet-title">记录今日训练</text>
+          <text class="sheet-title">{{ titleText }}</text>
           <view class="close-btn" @tap="handleClose">
             <text class="close-icon">✕</text>
           </view>
         </view>
       </view>
 
-      <!-- 表单区域 -->
       <scroll-view scroll-y class="sheet-body">
-        <!-- 1. 打卡日期 -->
         <view class="form-section">
           <text class="section-label">打卡日期</text>
           <view class="date-badge">
-            <text class="date-text">📅 {{ displayDate }}</text>
+            <text class="date-text">{{ dateText }}</text>
           </view>
         </view>
 
-        <!-- 2. 训练部位多选 -->
         <view class="form-section">
-          <text class="section-label">训练部位 (可多选)</text>
+          <text class="section-label">训练部位（可多选）</text>
+          <text v-if="seed.unresolvedTitle" class="unresolved-title">当前记录：{{ seed.unresolvedTitle }}</text>
+          <text v-if="seed.unresolvedTitle" class="unresolved-hint">无法对应到下面的部位，请重新选择后再保存</text>
           <view class="chips-group">
             <view
               v-for="part in partOptions"
@@ -42,42 +39,43 @@
           </view>
         </view>
 
-        <!-- 3. 训练时长 -->
         <view class="form-section">
           <view class="section-label-row">
             <text class="section-label">训练时长</text>
             <text class="duration-highlight">{{ duration }} 分钟</text>
           </view>
-          <!-- 快捷时长胶囊 -->
           <view class="duration-chips">
             <view
-              v-for="d in [30, 45, 60, 90, 120]"
-              :key="d"
+              v-for="option in durationOptions"
+              :key="option"
               class="duration-chip"
-              :class="{ 'duration-chip-active': duration === d }"
-              @tap="duration = d"
+              :class="{ 'duration-chip-active': duration === option }"
+              @tap="setDuration(option)"
             >
-              <text class="duration-chip-text">{{ d }}m</text>
+              <text class="duration-chip-text">{{ option }}</text>
             </view>
           </view>
         </view>
 
-        <!-- 4. 训练备注 (选填) -->
         <view class="form-section">
-          <text class="section-label">心得备注 (选填)</text>
+          <text class="section-label">今日感受（选填）</text>
           <input
             v-model="notes"
             class="note-input"
-            placeholder="例如：哑铃卧推突破 24kg，肩峰泵感好"
+            :disabled="saving"
+            placeholder="例如：今天肩有点酸，但完成了"
             placeholder-class="input-placeholder"
           />
         </view>
       </scroll-view>
 
-      <!-- 底部提交按钮 -->
       <view class="sheet-footer">
-        <view class="submit-btn" @tap="handleSubmit">
-          <text class="submit-text">确认保存打卡</text>
+        <view
+          class="submit-btn"
+          :class="{ 'submit-btn-disabled': !canSubmit && !saving }"
+          @tap="handleSubmit"
+        >
+          <text class="submit-text">{{ saving ? '保存中' : '确认保存打卡' }}</text>
         </view>
       </view>
     </view>
@@ -85,77 +83,61 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import type { AddWorkoutForm } from '../types'
+import { computed, ref } from 'vue'
+import { BODY_PART_OPTIONS, formatFormTitle, formatSelectedDateLabel } from '../../../domain/today-workout'
+import type { AddWorkoutForm, WorkoutFormSeed } from '../types'
 
-interface Props {
+const props = defineProps<{
   visible: boolean
-  defaultDate?: string
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  visible: false,
-  defaultDate: '',
-})
+  seed: WorkoutFormSeed
+  saving: boolean
+  todayDateStr: string
+}>()
 
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
   (e: 'save', form: AddWorkoutForm): void
 }>()
 
-const partOptions = ['胸部', '背部', '肩部', '腿部', '手臂', '腰腹核心', '有氧燃脂']
+const partOptions = BODY_PART_OPTIONS
+const durationOptions = [30, 45, 60, 90, 120]
+const selectedParts = ref<string[]>([...props.seed.bodyParts])
+const duration = ref(props.seed.duration)
+const notes = ref(props.seed.notes)
 
-const selectedParts = ref<string[]>(['肩部', '手臂'])
-const duration = ref<number>(60)
-const notes = ref<string>('')
-
-const displayDate = computed(() => {
-  return props.defaultDate || '今日'
-})
-
-watch(
-  () => props.visible,
-  (val) => {
-    if (val) {
-      if (selectedParts.value.length === 0) {
-        selectedParts.value = ['肩部']
-      }
-    }
-  }
-)
+const canSubmit = computed(() => selectedParts.value.length > 0)
+const titleText = computed(() => formatFormTitle(props.seed.date, props.seed.editing))
+const dateText = computed(() => formatSelectedDateLabel(props.seed.date, props.todayDateStr))
 
 const togglePart = (part: string) => {
-  const idx = selectedParts.value.indexOf(part)
-  if (idx >= 0) {
-    if (selectedParts.value.length > 1) {
-      selectedParts.value.splice(idx, 1)
-    }
-  } else {
-    selectedParts.value.push(part)
-  }
+  if (props.saving) return
+  const index = selectedParts.value.indexOf(part)
+  if (index >= 0) selectedParts.value.splice(index, 1)
+  else selectedParts.value.push(part)
+}
+
+const setDuration = (option: number) => {
+  if (props.saving) return
+  duration.value = option
 }
 
 const handleClose = () => {
+  if (props.saving) return
   emit('update:visible', false)
 }
 
 const handleSubmit = () => {
-  if (selectedParts.value.length === 0) {
-    uni.showToast({
-      title: '请至少选择一个训练部位',
-      icon: 'none',
-    })
+  if (props.saving) return
+  if (!canSubmit.value) {
+    uni.showToast({ title: '请至少选择一个训练部位', icon: 'none' })
     return
   }
-
   emit('save', {
-    date: props.defaultDate,
+    date: props.seed.date,
     bodyParts: [...selectedParts.value],
     duration: duration.value,
     notes: notes.value,
   })
-
-  handleClose()
 }
 </script>
 
@@ -179,7 +161,6 @@ const handleSubmit = () => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(4px);
 }
 
 .modal-sheet {
@@ -191,6 +172,15 @@ const handleSubmit = () => {
   box-shadow: 0 -12rpx 40rpx rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+}
+
+.saving-shield {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
 }
 
 .sheet-header {
@@ -253,6 +243,21 @@ const handleSubmit = () => {
   display: block;
 }
 
+.unresolved-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #333333;
+  margin-bottom: 8rpx;
+}
+
+.unresolved-hint {
+  display: block;
+  font-size: 22rpx;
+  color: #A0A5AB;
+  margin-bottom: 16rpx;
+}
+
 .section-label-row {
   display: flex;
   flex-direction: row;
@@ -280,7 +285,6 @@ const handleSubmit = () => {
   font-weight: 600;
 }
 
-/* 训练部位标签 */
 .chips-group {
   display: flex;
   flex-direction: row;
@@ -292,7 +296,6 @@ const handleSubmit = () => {
   padding: 14rpx 28rpx;
   background: #F4F6F9;
   border-radius: 32rpx;
-  transition: all 0.2s ease;
 }
 
 .chip-active {
@@ -311,7 +314,6 @@ const handleSubmit = () => {
   font-weight: 700;
 }
 
-/* 时长胶囊 */
 .duration-chips {
   display: flex;
   flex-direction: row;
@@ -324,11 +326,12 @@ const handleSubmit = () => {
   padding: 16rpx 0;
   background: #F4F6F9;
   border-radius: 24rpx;
+  border: 2rpx solid transparent;
 }
 
 .duration-chip-active {
   background: #E8F6DC;
-  border: 2rpx solid #67C23A;
+  border-color: #67C23A;
 }
 
 .duration-chip-text {
@@ -354,7 +357,6 @@ const handleSubmit = () => {
   color: #A0A5AB;
 }
 
-/* 底部提交按钮 */
 .sheet-footer {
   margin-top: 36rpx;
 }
@@ -369,9 +371,18 @@ const handleSubmit = () => {
   box-shadow: 0 8rpx 24rpx rgba(103, 194, 58, 0.4);
 }
 
+.submit-btn-disabled {
+  background: #E0E4E8;
+  box-shadow: none;
+}
+
 .submit-text {
   color: #FFFFFF;
   font-size: 32rpx;
   font-weight: 800;
+}
+
+.submit-btn-disabled .submit-text {
+  color: #8E8E93;
 }
 </style>

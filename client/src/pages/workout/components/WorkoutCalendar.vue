@@ -52,18 +52,24 @@
         <view v-else class="badge-placeholder"></view>
       </view>
     </view>
+
+    <view v-if="monthNotice !== 'none'" class="month-notice">
+      <text class="month-notice-text">{{ monthNotice === 'stale' ? '月历刷新失败，简字仍是上次读到的' : '月历没读到' }}</text>
+      <text class="month-notice-retry" @tap="handleRetry">重试</text>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { CalendarDayItem } from '../types'
+import type { CalendarDayItem, MonthNotice } from '../types'
 
 interface Props {
   year: number
   month: number // 1 - 12
   selectedDateStr: string // "YYYY-MM-DD"
   workoutMap: Record<string, { bodyPartBadge: string }>
+  monthNotice?: MonthNotice
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -71,12 +77,14 @@ const props = withDefaults(defineProps<Props>(), {
   month: 11,
   selectedDateStr: '2023-11-02',
   workoutMap: () => ({}),
+  monthNotice: 'none',
 })
 
 const emit = defineEmits<{
   (e: 'select-date', dateStr: string): void
   (e: 'prev-month'): void
   (e: 'next-month'): void
+  (e: 'retry'): void
 }>()
 
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
@@ -184,6 +192,10 @@ const handlePrevMonth = () => {
 
 const handleNextMonth = () => {
   emit('next-month')
+}
+
+const handleRetry = () => {
+  emit('retry')
 }
 </script>
 
@@ -336,5 +348,25 @@ const handleNextMonth = () => {
 .badge-placeholder {
   height: 28rpx;
   margin-top: 6rpx;
+}
+
+.month-notice {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16rpx;
+  padding: 0 12rpx;
+}
+
+.month-notice-text {
+  font-size: 24rpx;
+  color: #8E8E93;
+}
+
+.month-notice-retry {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #74C043;
 }
 </style>

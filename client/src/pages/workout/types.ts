@@ -19,8 +19,21 @@ export interface DayWorkoutDetail {
   date: string
   durationMinutes: number // 训练时长(分钟)
   bodyPartsTitle: string  // 训练内容, 如 "肩部 & 手臂"
-  status: 'COMPLETED' | 'REST' // "已完成" 或 "休息"
-  notes?: string
+  status: 'COMPLETED'
+  notes: string | null
+}
+
+export type WorkoutDetailPhase = 'loading' | 'error' | 'rest' | 'ready'
+
+export type MonthNotice = 'none' | 'miss' | 'stale'
+
+export interface WorkoutFormSeed {
+  date: string
+  editing: boolean
+  bodyParts: string[]
+  duration: number
+  notes: string
+  unresolvedTitle: string | null
 }
 
 // 新增打卡表单数据
@@ -28,5 +41,5 @@ export interface AddWorkoutForm {
   date: string
   bodyParts: string[]
   duration: number
-  notes?: string
+  notes: string
 }
