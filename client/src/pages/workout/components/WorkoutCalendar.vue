@@ -62,7 +62,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { resolveCalendarSwipe } from '../../../domain/today-workout'
 import type { CalendarDayItem, MonthNotice } from '../types'
 
 interface Props {
@@ -186,6 +185,13 @@ const getTodayDateStr = () => {
 let swipeStartX = 0
 let swipeStartY = 0
 let ignoreNextTap = false
+
+const resolveCalendarSwipe = (startX: number, startY: number, endX: number, endY: number): 'prev' | 'next' | null => {
+  const dx = endX - startX
+  const dy = endY - startY
+  if (Math.abs(dx) < 48 || Math.abs(dx) <= Math.abs(dy)) return null
+  return dx < 0 ? 'next' : 'prev'
+}
 
 const readTouch = (touch?: { clientX: number; clientY: number; pageX?: number; pageY?: number }) => ({
   x: touch?.pageX ?? touch?.clientX ?? 0,

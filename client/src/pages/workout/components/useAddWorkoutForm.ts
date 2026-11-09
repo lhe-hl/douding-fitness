@@ -1,12 +1,31 @@
 import { computed, ref } from 'vue'
-import {
-  BODY_PART_OPTIONS,
-  DURATION_PRESETS,
-  formatFormTitle,
-  formatSelectedDateLabel,
-  parseDurationMinutes,
-} from '../../domain/today-workout'
-import type { AddWorkoutForm, WorkoutFormSeed } from './types'
+import type { AddWorkoutForm, WorkoutFormSeed } from '../types'
+
+const BODY_PART_OPTIONS = ['胸部', '背部', '肩部', '腿部', '手臂', '腰腹核心', '有氧燃脂'] as const
+const DURATION_PRESETS = [30, 45, 60, 90, 120] as const
+
+function parseDurationMinutes(value: string): number | null {
+  const trimmed = value.trim()
+  if (!/^\d+$/.test(trimmed)) return null
+  const minutes = Number(trimmed)
+  if (minutes < 1 || minutes > 600) return null
+  return minutes
+}
+
+function monthDayText(ymd: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd)
+  if (!match) return ymd
+  return `${Number(match[2])}月${Number(match[3])}日`
+}
+
+function formatSelectedDateLabel(ymd: string, todayYmd: string): string {
+  const text = monthDayText(ymd)
+  return ymd === todayYmd ? `${text} · 今天` : text
+}
+
+function formatFormTitle(ymd: string, editing: boolean): string {
+  return `${editing ? '修改' : '记录'}${monthDayText(ymd)}训练`
+}
 
 export function useAddWorkoutForm(
   props: { seed: WorkoutFormSeed; saving: boolean; todayDateStr: string },

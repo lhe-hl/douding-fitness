@@ -61,8 +61,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { EMPTY_TODAY_REMARK } from '../../../domain/today-workout'
 import type { HomeTodayEcho, HomeWeekDay, HomeWorkoutStatus } from '../types'
+
+const EMPTY_TODAY_REMARK = '明天也要加油哦'
 
 const props = withDefaults(defineProps<{
   status: HomeWorkoutStatus

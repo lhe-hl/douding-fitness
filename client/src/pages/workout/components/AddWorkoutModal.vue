@@ -121,7 +121,7 @@
 </template>
 <script setup lang="ts">
 import type { AddWorkoutForm, WorkoutFormSeed } from '../types'
-import { useAddWorkoutForm } from '../useAddWorkoutForm'
+import { useAddWorkoutForm } from './useAddWorkoutForm'
 const props = defineProps<{
   visible: boolean
   seed: WorkoutFormSeed
