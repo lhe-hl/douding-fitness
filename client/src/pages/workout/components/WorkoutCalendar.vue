@@ -1,5 +1,5 @@
 <template>
-  <view class="calendar-card">
+  <view class="calendar-card" @touchstart="onTouchStart" @touchend="onTouchEnd">
     <!-- 顶部年月栏与左右箭头 -->
     <view class="calendar-header">
       <text class="month-title">{{ monthText }} {{ year }}</text>
@@ -62,6 +62,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { resolveCalendarSwipe } from '../../../domain/today-workout'
 import type { CalendarDayItem, MonthNotice } from '../types'
 
 interface Props {
@@ -182,7 +183,35 @@ const getTodayDateStr = () => {
   return formatDateStr(now.getFullYear(), now.getMonth() + 1, now.getDate())
 }
 
+let swipeStartX = 0
+let swipeStartY = 0
+let ignoreNextTap = false
+
+const readTouch = (touch?: { clientX: number; clientY: number; pageX?: number; pageY?: number }) => ({
+  x: touch?.pageX ?? touch?.clientX ?? 0,
+  y: touch?.pageY ?? touch?.clientY ?? 0,
+})
+
+const onTouchStart = (event: TouchEvent) => {
+  const point = readTouch(event.touches[0])
+  swipeStartX = point.x
+  swipeStartY = point.y
+}
+
+const onTouchEnd = (event: TouchEvent) => {
+  const point = readTouch(event.changedTouches[0])
+  const direction = resolveCalendarSwipe(swipeStartX, swipeStartY, point.x, point.y)
+  if (!direction) return
+  ignoreNextTap = true
+  if (direction === 'next') emit('next-month')
+  else emit('prev-month')
+}
+
 const handleSelectDay = (day: CalendarDayItem) => {
+  if (ignoreNextTap) {
+    ignoreNextTap = false
+    return
+  }
   emit('select-date', day.fullDateStr)
 }
 
@@ -206,7 +235,6 @@ const handleRetry = () => {
   padding: 36rpx 28rpx 32rpx 28rpx;
   box-shadow: 0 10rpx 32rpx rgba(0, 0, 0, 0.035);
 }
-
 /* 顶部年月与左右翻页 */
 .calendar-header {
   display: flex;
@@ -215,21 +243,18 @@ const handleRetry = () => {
   align-items: center;
   padding: 0 12rpx 24rpx 12rpx;
 }
-
 .month-title {
   font-size: 38rpx;
   font-weight: 800;
   color: #111111;
   letter-spacing: -0.5rpx;
 }
-
 .nav-arrows {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 24rpx;
 }
-
 .arrow-btn {
   width: 52rpx;
   height: 52rpx;
@@ -239,18 +264,15 @@ const handleRetry = () => {
   border-radius: 50%;
   transition: background 0.15s ease;
 }
-
 .arrow-btn:active {
   background: #F0F2F5;
 }
-
 .arrow-icon {
   font-size: 40rpx;
   color: #8E8E93;
   line-height: 1;
   font-weight: 600;
 }
-
 /* 星期表头 */
 .week-header {
   display: flex;
@@ -258,7 +280,6 @@ const handleRetry = () => {
   justify-content: space-between;
   padding: 12rpx 0 20rpx 0;
 }
-
 .week-cell {
   flex: 1;
   text-align: center;
@@ -266,14 +287,12 @@ const handleRetry = () => {
   font-weight: 600;
   color: #8E8E93;
 }
-
 /* 日历网格 */
 .days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   row-gap: 16rpx;
 }
-
 .day-cell {
   display: flex;
   flex-direction: column;
@@ -281,11 +300,9 @@ const handleRetry = () => {
   justify-content: flex-start;
   min-height: 86rpx;
 }
-
 .not-current-month .date-number {
   color: #CBD3DC !important;
 }
-
 /* 日期数字圆圈 */
 .date-number-wrap {
   width: 52rpx;
@@ -296,36 +313,30 @@ const handleRetry = () => {
   justify-content: center;
   transition: all 0.2s ease;
 }
-
 .date-number {
   font-size: 28rpx;
   font-weight: 700;
   color: #1A1A1A;
 }
-
 /* 当天专属标记圆圈 (无论是否选中均有圆圈标识) */
 .number-today {
   border: 2rpx solid #67C23A;
   box-sizing: border-box;
 }
-
 .number-today .date-number {
   color: #67C23A;
   font-weight: 800;
 }
-
 /* 选中高亮状态：柔和绿底 + 绿色边框高光圈 */
 .number-active {
   background: #E8F6DC;
   border: 2rpx solid #74C043;
   box-shadow: 0 4rpx 14rpx rgba(116, 192, 67, 0.25);
 }
-
 .number-active .date-number {
   color: #2F6F0E;
   font-weight: 800;
 }
-
 /* 训练部位绿色小胶囊徽章 */
 .badge-wrap {
   margin-top: 6rpx;
@@ -333,7 +344,6 @@ const handleRetry = () => {
   align-items: center;
   justify-content: center;
 }
-
 .body-badge {
   background: #67C23A;
   color: #FFFFFF;
@@ -344,12 +354,10 @@ const handleRetry = () => {
   line-height: 1.25;
   box-shadow: 0 2rpx 6rpx rgba(103, 194, 58, 0.35);
 }
-
 .badge-placeholder {
   height: 28rpx;
   margin-top: 6rpx;
 }
-
 .month-notice {
   display: flex;
   flex-direction: row;
@@ -358,12 +366,10 @@ const handleRetry = () => {
   margin-top: 16rpx;
   padding: 0 12rpx;
 }
-
 .month-notice-text {
   font-size: 24rpx;
   color: #8E8E93;
 }
-
 .month-notice-retry {
   font-size: 24rpx;
   font-weight: 700;

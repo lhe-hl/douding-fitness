@@ -23,7 +23,7 @@ export interface DayWorkoutDetail {
   notes: string | null
 }
 
-export type WorkoutDetailPhase = 'loading' | 'error' | 'rest' | 'ready'
+export type WorkoutDetailPhase = 'loading' | 'error' | 'rest' | 'ready' | 'future'
 
 export type MonthNotice = 'none' | 'miss' | 'stale'
 

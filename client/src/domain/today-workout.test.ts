@@ -4,7 +4,10 @@ import {
   countDistinctWorkoutDates,
   formatFormTitle,
   formatSelectedDateLabel,
+  isAfterYmd,
   isValidYmd,
+  parseDurationMinutes,
+  resolveCalendarSwipe,
   resolveFormInitial,
   splitBodyPartsTitle,
   weekDateStrings,
@@ -21,6 +24,36 @@ describe('isValidYmd', () => {
     expect(isValidYmd('2026-1-09')).toBe(false)
     expect(isValidYmd('2026-13-01')).toBe(false)
     expect(isValidYmd('2026-02-31')).toBe(false)
+  })
+})
+
+describe('isAfterYmd', () => {
+  it('今天和过去不是未来，之后的日期才是', () => {
+    expect(isAfterYmd('2026-11-09', '2026-11-09')).toBe(false)
+    expect(isAfterYmd('2026-11-08', '2026-11-09')).toBe(false)
+    expect(isAfterYmd('2026-11-10', '2026-11-09')).toBe(true)
+    expect(isAfterYmd('2026-12-01', '2026-11-09')).toBe(true)
+  })
+})
+
+describe('parseDurationMinutes', () => {
+  it('只接受 1 到 600 的整数分钟', () => {
+    expect(parseDurationMinutes('75')).toBe(75)
+    expect(parseDurationMinutes(' 1 ')).toBe(1)
+    expect(parseDurationMinutes('600')).toBe(600)
+    expect(parseDurationMinutes('0')).toBeNull()
+    expect(parseDurationMinutes('601')).toBeNull()
+    expect(parseDurationMinutes('60.5')).toBeNull()
+    expect(parseDurationMinutes('')).toBeNull()
+  })
+})
+
+describe('resolveCalendarSwipe', () => {
+  it('向左滑到下个月，向右滑到上个月，上下滑和短滑不动', () => {
+    expect(resolveCalendarSwipe(200, 100, 80, 110)).toBe('next')
+    expect(resolveCalendarSwipe(80, 100, 200, 90)).toBe('prev')
+    expect(resolveCalendarSwipe(100, 40, 110, 180)).toBeNull()
+    expect(resolveCalendarSwipe(100, 100, 130, 100)).toBeNull()
   })
 })
 
@@ -111,7 +144,9 @@ describe('splitBodyPartsTitle', () => {
   it('拆不开时不得替换成默认肩部和手臂', () => {
     const split = splitBodyPartsTitle('肩部+手臂')
     expect(split.refillable).toBe(false)
+    expect(split.parts).toEqual(['肩部+手臂'])
     expect(split.parts).not.toEqual(['肩部', '手臂'])
+    expect(splitBodyPartsTitle('肩部 & 小腿').parts).toEqual(['肩部', '小腿'])
     expect(splitBodyPartsTitle('肩部 & 小腿').refillable).toBe(false)
   })
 })
@@ -141,18 +176,23 @@ describe('resolveFormInitial', () => {
     })
   })
 
-  it('标题拆不开时清空部位选择，并保留原标题、时长和感受', () => {
+  it('自定义部位按原词回填，不换成默认肩部和手臂', () => {
     expect(resolveFormInitial({
-      bodyPartsTitle: '肩部+手臂',
+      bodyPartsTitle: '肩部 & 小腿',
       durationMinutes: 40,
       notes: '今天肩有点酸，但完成了',
     })).toEqual({
-      bodyParts: [],
+      bodyParts: ['肩部', '小腿'],
       duration: 40,
       notes: '今天肩有点酸，但完成了',
-      unresolvedTitle: '肩部+手臂',
+      unresolvedTitle: null,
       editing: true,
     })
+    expect(resolveFormInitial({
+      bodyPartsTitle: '肩部+手臂',
+      durationMinutes: 40,
+      notes: null,
+    }).bodyParts).toEqual(['肩部+手臂'])
   })
 })
 
@@ -224,7 +264,8 @@ describe('buildWeekWorkoutView', () => {
         notes: '',
       },
     })
-    expect(opaque.today?.tags).toEqual([])
+    expect(opaque.today?.tags).toEqual(['胸肩塑形'])
+    expect(opaque.today?.tags).not.toEqual(['胸肩塑形', '有氧燃脂'])
     expect(opaque.today?.notes).toBeNull()
     expect(opaque.today?.bodyPartsTitle).toBe('胸肩塑形')
   })

@@ -1,7 +1,6 @@
 <template>
   <view v-if="visible" class="modal-root">
     <view class="modal-mask" @tap="handleClose"></view>
-
     <view class="modal-sheet">
       <view v-if="saving" class="saving-shield"></view>
       <view class="sheet-header">
@@ -13,7 +12,6 @@
           </view>
         </view>
       </view>
-
       <scroll-view scroll-y class="sheet-body">
         <view class="form-section">
           <text class="section-label">打卡日期</text>
@@ -21,7 +19,6 @@
             <text class="date-text">{{ dateText }}</text>
           </view>
         </view>
-
         <view class="form-section">
           <text class="section-label">训练部位（可多选）</text>
           <text v-if="seed.unresolvedTitle" class="unresolved-title">当前记录：{{ seed.unresolvedTitle }}</text>
@@ -36,9 +33,35 @@
             >
               <text class="chip-text">{{ part }}</text>
             </view>
+            <view
+              v-for="part in customParts"
+              :key="part"
+              class="chip-item chip-active"
+              @tap="togglePart(part)"
+            >
+              <text class="chip-text">{{ part }}</text>
+            </view>
+            <view
+              class="chip-item"
+              :class="{ 'chip-active': customPartOpen }"
+              @tap="customPartOpen = !customPartOpen"
+            >
+              <text class="chip-text">自定义</text>
+            </view>
+          </view>
+          <view v-if="customPartOpen" class="custom-row">
+            <input
+              v-model="customPartText"
+              class="note-input custom-input"
+              :disabled="saving"
+              placeholder="例如：小腿"
+              placeholder-class="input-placeholder"
+            />
+            <view class="custom-add" @tap="addCustomPart">
+              <text class="custom-add-text">添加</text>
+            </view>
           </view>
         </view>
-
         <view class="form-section">
           <view class="section-label-row">
             <text class="section-label">训练时长</text>
@@ -49,14 +72,30 @@
               v-for="option in durationOptions"
               :key="option"
               class="duration-chip"
-              :class="{ 'duration-chip-active': duration === option }"
+              :class="{ 'duration-chip-active': !customDuration && duration === option }"
               @tap="setDuration(option)"
             >
               <text class="duration-chip-text">{{ option }}</text>
             </view>
+            <view
+              class="duration-chip"
+              :class="{ 'duration-chip-active': customDuration }"
+              @tap="enableCustomDuration"
+            >
+              <text class="duration-chip-text">自定义</text>
+            </view>
           </view>
+          <input
+            v-if="customDuration"
+            class="note-input custom-duration-input"
+            type="number"
+            :value="customDurationText"
+            :disabled="saving"
+            placeholder="输入分钟，1-600"
+            placeholder-class="input-placeholder"
+            @input="onCustomDurationInput"
+          />
         </view>
-
         <view class="form-section">
           <text class="section-label">今日感受（选填）</text>
           <input
@@ -68,7 +107,6 @@
           />
         </view>
       </scroll-view>
-
       <view class="sheet-footer">
         <view
           class="submit-btn"
@@ -81,66 +119,45 @@
     </view>
   </view>
 </template>
-
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { BODY_PART_OPTIONS, formatFormTitle, formatSelectedDateLabel } from '../../../domain/today-workout'
 import type { AddWorkoutForm, WorkoutFormSeed } from '../types'
-
+import { useAddWorkoutForm } from '../useAddWorkoutForm'
 const props = defineProps<{
   visible: boolean
   seed: WorkoutFormSeed
   saving: boolean
   todayDateStr: string
 }>()
-
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
   (e: 'save', form: AddWorkoutForm): void
 }>()
-
-const partOptions = BODY_PART_OPTIONS
-const durationOptions = [30, 45, 60, 90, 120]
-const selectedParts = ref<string[]>([...props.seed.bodyParts])
-const duration = ref(props.seed.duration)
-const notes = ref(props.seed.notes)
-
-const canSubmit = computed(() => selectedParts.value.length > 0)
-const titleText = computed(() => formatFormTitle(props.seed.date, props.seed.editing))
-const dateText = computed(() => formatSelectedDateLabel(props.seed.date, props.todayDateStr))
-
-const togglePart = (part: string) => {
-  if (props.saving) return
-  const index = selectedParts.value.indexOf(part)
-  if (index >= 0) selectedParts.value.splice(index, 1)
-  else selectedParts.value.push(part)
-}
-
-const setDuration = (option: number) => {
-  if (props.saving) return
-  duration.value = option
-}
-
+const {
+  partOptions,
+  durationOptions,
+  selectedParts,
+  customParts,
+  duration,
+  customDuration,
+  customDurationText,
+  notes,
+  customPartOpen,
+  customPartText,
+  canSubmit,
+  titleText,
+  dateText,
+  togglePart,
+  setDuration,
+  enableCustomDuration,
+  onCustomDurationInput,
+  addCustomPart,
+  handleSubmit,
+} = useAddWorkoutForm(props, (event, form) => emit(event, form))
 const handleClose = () => {
   if (props.saving) return
   emit('update:visible', false)
 }
-
-const handleSubmit = () => {
-  if (props.saving) return
-  if (!canSubmit.value) {
-    uni.showToast({ title: '请至少选择一个训练部位', icon: 'none' })
-    return
-  }
-  emit('save', {
-    date: props.seed.date,
-    bodyParts: [...selectedParts.value],
-    duration: duration.value,
-    notes: notes.value,
-  })
-}
 </script>
-
 <style scoped>
 .modal-root {
   position: fixed;
@@ -153,7 +170,6 @@ const handleSubmit = () => {
   flex-direction: column;
   justify-content: flex-end;
 }
-
 .modal-mask {
   position: absolute;
   top: 0;
@@ -162,7 +178,6 @@ const handleSubmit = () => {
   bottom: 0;
   background: rgba(0, 0, 0, 0.45);
 }
-
 .modal-sheet {
   position: relative;
   background: #FFFFFF;
@@ -173,7 +188,6 @@ const handleSubmit = () => {
   display: flex;
   flex-direction: column;
 }
-
 .saving-shield {
   position: absolute;
   top: 0;
@@ -182,14 +196,12 @@ const handleSubmit = () => {
   bottom: 0;
   z-index: 2;
 }
-
 .sheet-header {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding-bottom: 20rpx;
 }
-
 .header-drag-handle {
   width: 72rpx;
   height: 8rpx;
@@ -197,7 +209,6 @@ const handleSubmit = () => {
   border-radius: 4rpx;
   margin-bottom: 24rpx;
 }
-
 .header-content {
   width: 100%;
   display: flex;
@@ -205,13 +216,11 @@ const handleSubmit = () => {
   justify-content: space-between;
   align-items: center;
 }
-
 .sheet-title {
   font-size: 36rpx;
   font-weight: 800;
   color: #111111;
 }
-
 .close-btn {
   width: 48rpx;
   height: 48rpx;
@@ -221,20 +230,16 @@ const handleSubmit = () => {
   border-radius: 50%;
   background: #F4F6F9;
 }
-
 .close-icon {
   font-size: 24rpx;
   color: #8E8E93;
 }
-
 .sheet-body {
   max-height: 54vh;
 }
-
 .form-section {
   margin-top: 28rpx;
 }
-
 .section-label {
   font-size: 26rpx;
   font-weight: 700;
@@ -242,7 +247,6 @@ const handleSubmit = () => {
   margin-bottom: 16rpx;
   display: block;
 }
-
 .unresolved-title {
   display: block;
   font-size: 26rpx;
@@ -250,14 +254,12 @@ const handleSubmit = () => {
   color: #333333;
   margin-bottom: 8rpx;
 }
-
 .unresolved-hint {
   display: block;
   font-size: 22rpx;
   color: #A0A5AB;
   margin-bottom: 16rpx;
 }
-
 .section-label-row {
   display: flex;
   flex-direction: row;
@@ -265,61 +267,51 @@ const handleSubmit = () => {
   align-items: center;
   margin-bottom: 16rpx;
 }
-
 .duration-highlight {
   font-size: 28rpx;
   font-weight: 800;
   color: #67C23A;
 }
-
 .date-badge {
   display: inline-block;
   background: #F4F6F9;
   padding: 12rpx 28rpx;
   border-radius: 20rpx;
 }
-
 .date-text {
   font-size: 26rpx;
   color: #111111;
   font-weight: 600;
 }
-
 .chips-group {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   gap: 16rpx;
 }
-
 .chip-item {
   padding: 14rpx 28rpx;
   background: #F4F6F9;
   border-radius: 32rpx;
 }
-
 .chip-active {
   background: #67C23A;
   box-shadow: 0 4rpx 14rpx rgba(103, 194, 58, 0.4);
 }
-
 .chip-text {
   font-size: 24rpx;
   font-weight: 600;
   color: #4A515A;
 }
-
 .chip-active .chip-text {
   color: #FFFFFF;
   font-weight: 700;
 }
-
 .duration-chips {
   display: flex;
   flex-direction: row;
   gap: 14rpx;
 }
-
 .duration-chip {
   flex: 1;
   text-align: center;
@@ -328,23 +320,19 @@ const handleSubmit = () => {
   border-radius: 24rpx;
   border: 2rpx solid transparent;
 }
-
 .duration-chip-active {
   background: #E8F6DC;
   border-color: #67C23A;
 }
-
 .duration-chip-text {
   font-size: 24rpx;
   font-weight: 700;
   color: #555555;
 }
-
 .duration-chip-active .duration-chip-text {
   color: #2F6F0E;
   font-weight: 800;
 }
-
 .note-input {
   background: #F4F6F9;
   border-radius: 24rpx;
@@ -352,15 +340,35 @@ const handleSubmit = () => {
   font-size: 26rpx;
   color: #111111;
 }
-
+.custom-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+.custom-input {
+  flex: 1;
+}
+.custom-add {
+  background: #E8F6DC;
+  border-radius: 24rpx;
+  padding: 16rpx 24rpx;
+}
+.custom-add-text {
+  color: #2F6F0E;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+.custom-duration-input {
+  margin-top: 16rpx;
+}
 .input-placeholder {
   color: #A0A5AB;
 }
-
 .sheet-footer {
   margin-top: 36rpx;
 }
-
 .submit-btn {
   background: linear-gradient(135deg, #74C043 0%, #67C23A 100%);
   height: 96rpx;
@@ -370,18 +378,15 @@ const handleSubmit = () => {
   justify-content: center;
   box-shadow: 0 8rpx 24rpx rgba(103, 194, 58, 0.4);
 }
-
 .submit-btn-disabled {
   background: #E0E4E8;
   box-shadow: none;
 }
-
 .submit-text {
   color: #FFFFFF;
   font-size: 32rpx;
   font-weight: 800;
 }
-
 .submit-btn-disabled .submit-text {
   color: #8E8E93;
 }

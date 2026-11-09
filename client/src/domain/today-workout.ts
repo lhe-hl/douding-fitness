@@ -1,6 +1,29 @@
 export const BODY_PART_OPTIONS = ['胸部', '背部', '肩部', '腿部', '手臂', '腰腹核心', '有氧燃脂'] as const
 
+export const DURATION_PRESETS = [30, 45, 60, 90, 120] as const
+
+export const EMPTY_TODAY_REMARK = '明天也要加油哦'
+
 const WEEK_LABELS = ['一', '二', '三', '四', '五', '六', '日'] as const
+
+export function isAfterYmd(date: string, today: string): boolean {
+  return isValidYmd(date) && isValidYmd(today) && date > today
+}
+
+export function parseDurationMinutes(value: string): number | null {
+  const trimmed = value.trim()
+  if (!/^\d+$/.test(trimmed)) return null
+  const minutes = Number(trimmed)
+  if (minutes < 1 || minutes > 600) return null
+  return minutes
+}
+
+export function resolveCalendarSwipe(startX: number, startY: number, endX: number, endY: number): 'prev' | 'next' | null {
+  const dx = endX - startX
+  const dy = endY - startY
+  if (Math.abs(dx) < 48 || Math.abs(dx) <= Math.abs(dy)) return null
+  return dx < 0 ? 'next' : 'prev'
+}
 
 export function isValidYmd(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
@@ -86,10 +109,10 @@ export function resolveFormInitial(detail: {
   }
   const split = splitBodyPartsTitle(detail.bodyPartsTitle)
   return {
-    bodyParts: split.refillable ? split.parts : [],
+    bodyParts: split.parts,
     duration: detail.durationMinutes,
     notes: detail.notes ?? '',
-    unresolvedTitle: split.refillable ? null : detail.bodyPartsTitle,
+    unresolvedTitle: split.parts.length > 0 ? null : detail.bodyPartsTitle,
     editing: true,
   }
 }
@@ -165,7 +188,7 @@ export function buildWeekWorkoutView(args: {
       bodyPartsTitle: args.todayDetail.bodyPartsTitle,
       durationMinutes: args.todayDetail.durationMinutes,
       notes: args.todayDetail.notes ? args.todayDetail.notes : null,
-      tags: split.refillable ? split.parts : [],
+      tags: split.parts,
     },
   }
 }

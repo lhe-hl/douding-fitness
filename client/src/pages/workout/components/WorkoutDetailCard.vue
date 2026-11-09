@@ -4,6 +4,10 @@
       <text class="state-title">正在读取这一天</text>
     </view>
 
+    <view v-else-if="phase === 'future'" class="state-block">
+      <text class="state-title">未来的好身材在等你！</text>
+    </view>
+
     <view v-else-if="phase === 'error'" class="state-row">
       <view class="state-copy">
         <text class="state-title">这次没读到训练</text>

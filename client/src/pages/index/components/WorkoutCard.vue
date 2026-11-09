@@ -37,10 +37,12 @@
       </view>
 
       <view v-if="showToday" class="today-block">
-        <text class="today-flag">今天</text>
-        <text class="today-title">{{ today?.bodyPartsTitle }}</text>
-        <text class="today-duration">{{ today?.durationMinutes }} 分钟</text>
-        <text v-if="today?.notes" class="today-notes">{{ today?.notes }}</text>
+        <view class="today-main">
+          <text class="today-flag">今天</text>
+          <text class="today-title">{{ today?.bodyPartsTitle }}</text>
+          <text class="today-duration">{{ today?.durationMinutes }} 分钟</text>
+        </view>
+        <text class="today-notes">{{ today?.notes || EMPTY_TODAY_REMARK }}</text>
       </view>
 
       <view v-if="showTags" class="tags-group">
@@ -59,6 +61,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { EMPTY_TODAY_REMARK } from '../../../domain/today-workout'
 import type { HomeTodayEcho, HomeWeekDay, HomeWorkoutStatus } from '../types'
 
 const props = withDefaults(defineProps<{
@@ -249,6 +252,16 @@ const labelClass = (item: { completed: boolean; isToday: boolean }) => {
 
 .today-block {
   margin-top: 28rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.today-main {
+  flex: 1;
+  min-width: 0;
+  padding-right: 24rpx;
 }
 
 .today-flag {
@@ -277,11 +290,12 @@ const labelClass = (item: { completed: boolean; isToday: boolean }) => {
 
 .today-notes {
   display: -webkit-box;
-  margin-top: 8rpx;
+  width: 240rpx;
   font-size: 24rpx;
   font-weight: 600;
   color: #4A515A;
   line-height: 1.4;
+  text-align: right;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;

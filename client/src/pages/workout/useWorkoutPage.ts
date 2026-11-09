@@ -9,7 +9,7 @@ import {
   saveWorkout,
   type DayWorkoutDetailResponse,
 } from '../../api/workout'
-import { formatLocalYmd, resolveFormInitial } from '../../domain/today-workout'
+import { formatLocalYmd, isAfterYmd, resolveFormInitial } from '../../domain/today-workout'
 import type {
   AddWorkoutForm,
   DayWorkoutDetail,
@@ -56,10 +56,11 @@ export function useWorkoutPage() {
 
   const monthKey = () => `${currentYear.value}-${currentMonth.value}`
 
-  const actionDisabled = computed(() => detailPhase.value === 'loading' || detailPhase.value === 'error')
+  const actionDisabled = computed(() => detailPhase.value === 'loading' || detailPhase.value === 'error' || detailPhase.value === 'future')
   const actionText = computed(() => {
     if (detailPhase.value === 'loading') return '正在读取'
     if (detailPhase.value === 'error') return '请先重试'
+    if (detailPhase.value === 'future') return '未来的好身材在等你！'
     if (detailPhase.value === 'ready') return '修改这次训练'
     return '添加今日训练'
   })
@@ -85,6 +86,11 @@ export function useWorkoutPage() {
 
   async function loadDayDetail(dateStr: string, options?: { immediate?: boolean; keepOnError?: boolean }) {
     const token = ++dayToken
+    if (isAfterYmd(dateStr, todayDateStr)) {
+      detailPhase.value = 'future'
+      currentDetail.value = null
+      return
+    }
     if (options?.immediate !== false) {
       detailPhase.value = 'loading'
       currentDetail.value = null
@@ -150,6 +156,7 @@ export function useWorkoutPage() {
   }
 
   function openAddModal() {
+    if (isAfterYmd(selectedDateStr.value, todayDateStr)) return
     if (detailPhase.value !== 'rest' && detailPhase.value !== 'ready') return
     const initial = resolveFormInitial(detailPhase.value === 'ready' ? currentDetail.value : null)
     formSeed.value = {
