@@ -6,18 +6,28 @@ export interface UserHeaderData {
   isLoggedIn: boolean;
 }
 
-export interface DayStatus {
-  dayLabel: string;
-  completed: boolean;
-  percent: number; // 0 - 100
-  bodyPart?: string; // 当天训练部位，如 "胸", "背", "腿"
+export type HomeWorkoutStatus = 'loading' | 'ready' | 'error' | 'stale'
+
+export interface HomeWeekDay {
+  dayLabel: string
+  date: string
+  completed: boolean
+  bodyPartBadge: string
+  isToday: boolean
+}
+
+export interface HomeTodayEcho {
+  bodyPartsTitle: string
+  durationMinutes: number
+  notes: string | null
+  tags: string[]
 }
 
 export interface WorkoutData {
-  weekCount: number;
-  days: DayStatus[];
-  energyPercent: number;
-  tags: string[];
+  status: HomeWorkoutStatus
+  weekCount: number
+  days: HomeWeekDay[]
+  today: HomeTodayEcho | null
 }
 
 export interface MacroItem {
