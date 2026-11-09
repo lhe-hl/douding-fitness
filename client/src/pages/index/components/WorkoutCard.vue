@@ -42,7 +42,9 @@
           <text class="today-title">{{ today?.bodyPartsTitle }}</text>
           <text class="today-duration">{{ today?.durationMinutes }} 分钟</text>
         </view>
-        <text class="today-notes">{{ today?.notes || EMPTY_TODAY_REMARK }}</text>
+        <view class="today-notes-wrap">
+          <text class="today-notes">{{ today?.notes || EMPTY_TODAY_REMARK }}</text>
+        </view>
       </view>
 
       <view v-if="showTags" class="tags-group">
@@ -252,24 +254,24 @@ const labelClass = (item: { completed: boolean; isToday: boolean }) => {
 }
 
 .today-block {
-  margin-top: 28rpx;
+  margin-top: 32rpx;
   display: flex;
   flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .today-main {
-  flex: 1;
+  flex: 0 1 auto;
+  max-width: 42%;
   min-width: 0;
-  padding-right: 24rpx;
+  padding-right: 28rpx;
 }
 
 .today-flag {
   display: block;
   font-size: 22rpx;
   font-weight: 700;
-  color: #67C23A;
+  color: #74C043;
 }
 
 .today-title {
@@ -289,17 +291,21 @@ const labelClass = (item: { completed: boolean; isToday: boolean }) => {
   color: #333333;
 }
 
+.today-notes-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-top: 28rpx;
+  padding: 20rpx 24rpx;
+  background: #F4F8EF;
+  border-radius: 20rpx;
+}
+
 .today-notes {
-  display: -webkit-box;
-  width: 240rpx;
-  font-size: 24rpx;
+  display: block;
+  font-size: 26rpx;
   font-weight: 600;
-  color: #4A515A;
-  line-height: 1.4;
-  text-align: right;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  color: #333333;
+  line-height: 1.55;
 }
 
 .tags-group {
@@ -307,7 +313,7 @@ const labelClass = (item: { completed: boolean; isToday: boolean }) => {
   flex-direction: row;
   flex-wrap: wrap;
   gap: 16rpx;
-  margin-top: 32rpx;
+  margin-top: 28rpx;
 }
 
 .tag-item {
