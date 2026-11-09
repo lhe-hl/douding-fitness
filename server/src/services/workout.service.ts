@@ -1,4 +1,6 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
+import { extractBadge, resolveNotesUpdate } from '../domain/workout-rules';
 
 export interface ExerciseItemInput {
   actionName: string;
@@ -11,23 +13,42 @@ export interface SaveWorkoutInput {
   date: string;
   duration: number;
   bodyParts: string;
-  notes?: string;
+  notes?: string | null;
   exercises?: ExerciseItemInput[];
 }
 
-/**
- * 训练部位简字提取算法 (如: "肩部 & 手臂" -> "肩")
- */
-export function extractBadge(bodyParts: string): string {
-  if (!bodyParts) return '练';
-  if (bodyParts.includes('胸')) return '胸';
-  if (bodyParts.includes('肩')) return '肩';
-  if (bodyParts.includes('背')) return '背';
-  if (bodyParts.includes('腿')) return '腿';
-  if (bodyParts.includes('腰') || bodyParts.includes('核心')) return '腰';
-  if (bodyParts.includes('臂') || bodyParts.includes('二头') || bodyParts.includes('三头')) return '臂';
-  if (bodyParts.includes('有氧') || bodyParts.includes('跑')) return '跑';
-  return bodyParts.charAt(0) || '练';
+export class WorkoutAccessError extends Error {
+  status = 404;
+
+  constructor() {
+    super('训练记录不存在或无权操作');
+  }
+}
+
+function toExerciseData(item: ExerciseItemInput) {
+  return {
+    actionName: item.actionName,
+    sets: item.sets,
+    weight: item.weight,
+    reps: item.reps,
+  };
+}
+
+function isUniqueConflict(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+}
+
+async function replaceExercisesIfProvided(recordId: string, exercises: ExerciseItemInput[] | undefined) {
+  if (!exercises || exercises.length === 0) return;
+  await prisma.exerciseItem.deleteMany({
+    where: { workoutRecordId: recordId },
+  });
+  await prisma.exerciseItem.createMany({
+    data: exercises.map((item) => ({
+      workoutRecordId: recordId,
+      ...toExerciseData(item),
+    })),
+  });
 }
 
 /**
@@ -44,18 +65,31 @@ export async function getMonthOverview(userId: string, year: number, month: numb
         startsWith: prefix,
       },
     },
-    orderBy: {
-      date: 'asc',
-    },
+    orderBy: [{ date: 'asc' }, { updatedAt: 'desc' }],
   });
 
-  return records.map((r) => ({
-    id: r.id,
-    date: r.date,
-    duration: r.duration,
-    bodyParts: r.bodyParts,
-    bodyPartBadge: extractBadge(r.bodyParts),
-  }));
+  const seen = new Set<string>();
+  const items: Array<{
+    id: string;
+    date: string;
+    duration: number;
+    bodyParts: string;
+    bodyPartBadge: string;
+  }> = [];
+
+  for (const record of records) {
+    if (seen.has(record.date)) continue;
+    seen.add(record.date);
+    items.push({
+      id: record.id,
+      date: record.date,
+      duration: record.duration,
+      bodyParts: record.bodyParts,
+      bodyPartBadge: extractBadge(record.bodyParts),
+    });
+  }
+
+  return items;
 }
 
 /**
@@ -66,6 +100,9 @@ export async function getDayDetail(userId: string, date: string) {
     where: {
       userId,
       date,
+    },
+    orderBy: {
+      updatedAt: 'desc',
     },
     include: {
       exercises: {
@@ -85,82 +122,77 @@ export async function getDayDetail(userId: string, date: string) {
     date: record.date,
     durationMinutes: record.duration,
     bodyPartsTitle: record.bodyParts,
-    status: 'COMPLETED',
-    notes: record.notes,
-    exercises: record.exercises,
+    status: 'COMPLETED' as const,
+    notes: record.notes ? record.notes : null,
+    exercises: record.exercises.map((item) => ({
+      id: item.id,
+      actionName: item.actionName,
+      sets: item.sets,
+      weight: item.weight,
+      reps: item.reps,
+    })),
   };
 }
 
+async function updateExisting(recordId: string, existingNotes: string | null, input: SaveWorkoutInput) {
+  await prisma.workoutRecord.update({
+    where: { id: recordId },
+    data: {
+      duration: input.duration,
+      bodyParts: input.bodyParts,
+      notes: resolveNotesUpdate(input.notes, existingNotes),
+    },
+  });
+  await replaceExercisesIfProvided(recordId, input.exercises);
+}
+
 /**
- * 3. 保存/更新训练打卡记录 (幂等 Upsert 逻辑)
+ * 3. 保存/更新训练打卡记录。同一用户同一天只有一条主记录。
+ * 请求不带 exercises 时，不删除、不改写已有动作明细。
  */
 export async function saveWorkoutRecord(userId: string, input: SaveWorkoutInput) {
-  const { date, duration, bodyParts, notes, exercises } = input;
-
-  // 检查当天是否已有记录
   const existing = await prisma.workoutRecord.findFirst({
     where: {
       userId,
-      date,
+      date: input.date,
+    },
+    orderBy: {
+      updatedAt: 'desc',
     },
   });
 
-  let savedRecordId: string;
-
   if (existing) {
-    // 更新已有记录
-    const updated = await prisma.workoutRecord.update({
-      where: { id: existing.id },
-      data: {
-        duration,
-        bodyParts,
-        notes: notes ?? existing.notes,
-      },
-    });
-    savedRecordId = updated.id;
+    await updateExisting(existing.id, existing.notes, input);
+    return getDayDetail(userId, input.date);
+  }
 
-    // 如果提交了新的动作列表，先清理旧动作再批量写入
-    if (exercises && exercises.length > 0) {
-      await prisma.exerciseItem.deleteMany({
-        where: { workoutRecordId: savedRecordId },
-      });
-      await prisma.exerciseItem.createMany({
-        data: exercises.map((item) => ({
-          workoutRecordId: savedRecordId,
-          actionName: item.actionName,
-          sets: item.sets,
-          weight: item.weight,
-          reps: item.reps,
-        })),
-      });
-    }
-  } else {
-    // 新建打卡记录
-    const created = await prisma.workoutRecord.create({
+  try {
+    await prisma.workoutRecord.create({
       data: {
         userId,
-        date,
-        duration,
-        bodyParts,
-        notes,
+        date: input.date,
+        duration: input.duration,
+        bodyParts: input.bodyParts,
+        notes: resolveNotesUpdate(input.notes, null),
         exercises:
-          exercises && exercises.length > 0
+          input.exercises && input.exercises.length > 0
             ? {
-                create: exercises.map((item) => ({
-                  actionName: item.actionName,
-                  sets: item.sets,
-                  weight: item.weight,
-                  reps: item.reps,
-                })),
+                create: input.exercises.map((item) => toExerciseData(item)),
               }
             : undefined,
       },
     });
-    savedRecordId = created.id;
+  } catch (error) {
+    if (!isUniqueConflict(error)) throw error;
+    const winner = await prisma.workoutRecord.findFirst({
+      where: { userId, date: input.date },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (!winner) throw error;
+    await updateExisting(winner.id, winner.notes, input);
   }
 
-  // 返回最新详情
-  return getDayDetail(userId, date);
+  return getDayDetail(userId, input.date);
 }
 
 /**
@@ -175,7 +207,7 @@ export async function deleteWorkoutRecord(userId: string, recordId: string) {
   });
 
   if (!record) {
-    throw new Error('训练记录不存在或无权操作');
+    throw new WorkoutAccessError();
   }
 
   await prisma.workoutRecord.delete({

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as workoutService from '../services/workout.service';
+import { isValidYearMonth, isValidYmd } from '../domain/workout-rules';
 
 /**
  * 1. 获取指定月份的训练打卡摘要列表 (日历渲染)
@@ -11,10 +12,11 @@ export async function getMonthWorkout(req: Request, res: Response, next: NextFun
     const year = parseInt(req.query.year as string, 10);
     const month = parseInt(req.query.month as string, 10);
 
-    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
+    if (!isValidYearMonth(year, month)) {
       return res.status(400).json({
         code: 400,
         message: '参数错误: year 或 month 不合法 (如 ?year=2026&month=10)',
+        data: null,
       });
     }
 
@@ -39,10 +41,11 @@ export async function getDayWorkout(req: Request, res: Response, next: NextFunct
     const userId = req.userId!;
     const date = req.query.date as string;
 
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    if (!date || !isValidYmd(date)) {
       return res.status(400).json({
         code: 400,
         message: '参数错误: date 必须为 YYYY-MM-DD 格式 (如 ?date=2026-10-08)',
+        data: null,
       });
     }
 
@@ -65,27 +68,43 @@ export async function getDayWorkout(req: Request, res: Response, next: NextFunct
 export async function saveWorkout(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.userId!;
-    const { date, duration, bodyParts, notes, exercises } = req.body;
+    const body = req.body ?? {};
+    const { date, duration, bodyParts, exercises } = body;
 
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    if (!date || !isValidYmd(date)) {
       return res.status(400).json({
         code: 400,
         message: '参数错误: date 必须为 YYYY-MM-DD 格式',
+        data: null,
       });
     }
 
-    if (typeof duration !== 'number' || duration <= 0 || duration > 600) {
+    if (typeof duration !== 'number' || !Number.isInteger(duration) || duration < 1 || duration > 600) {
       return res.status(400).json({
         code: 400,
         message: '参数错误: duration 必须在 1 ~ 600 分钟之间',
+        data: null,
       });
     }
 
-    if (!bodyParts || typeof bodyParts !== 'string') {
+    if (typeof bodyParts !== 'string' || bodyParts.trim() === '') {
       return res.status(400).json({
         code: 400,
         message: '参数错误: bodyParts 训练部位不能为空',
+        data: null,
       });
+    }
+
+    let notes: string | null | undefined;
+    if (Object.prototype.hasOwnProperty.call(body, 'notes')) {
+      if (body.notes !== null && typeof body.notes !== 'string') {
+        return res.status(400).json({
+          code: 400,
+          message: '参数错误: notes 必须为字符串',
+          data: null,
+        });
+      }
+      notes = body.notes;
     }
 
     const data = await workoutService.saveWorkoutRecord(userId, {
@@ -93,7 +112,7 @@ export async function saveWorkout(req: Request, res: Response, next: NextFunctio
       duration,
       bodyParts,
       notes,
-      exercises,
+      exercises: Array.isArray(exercises) ? exercises : undefined,
     });
 
     return res.json({
@@ -115,10 +134,11 @@ export async function deleteWorkout(req: Request, res: Response, next: NextFunct
     const userId = req.userId!;
     const recordId = req.params.id;
 
-    if (!recordId) {
+    if (!recordId || Array.isArray(recordId)) {
       return res.status(400).json({
         code: 400,
         message: '缺少 recordId 参数',
+        data: null,
       });
     }
 
