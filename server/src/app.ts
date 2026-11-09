@@ -17,10 +17,10 @@ app.use('/api', apiRouter);
 // 全局异常捕获中间件
 app.use(errorHandler);
 
-// 启动服务
-app.listen(config.port, () => {
-  console.log(`[豆丁健身 Server] 服务已启动: http://localhost:${config.port}`);
-  console.log(`[豆丁健身 Server] 健康检查: http://localhost:${config.port}/api/health`);
+// 启动服务 (绑定 0.0.0.0 确保 IPv4 127.0.0.1 与局域网可访问)
+app.listen(config.port, '0.0.0.0', () => {
+  console.log(`[豆丁健身 Server] 服务已启动: http://127.0.0.1:${config.port}`);
+  console.log(`[豆丁健身 Server] 健康检查: http://127.0.0.1:${config.port}/api/health`);
 });
 
 export default app;

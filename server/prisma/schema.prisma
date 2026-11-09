@@ -31,14 +31,14 @@ model WorkoutRecord {
   user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   date        String         // YYYY-MM-DD
   duration    Int            @default(0) // 训练时长(分钟)
-  bodyParts   String         // 训练部位逗号分隔: "胸部,三头"
-  notes       String?        // 心得感悟
+  bodyParts   String         // 训练部位，按选择顺序用 " & " 拼接
+  notes       String?        // 今日感受，空则存 null
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
   exercises   ExerciseItem[]
 
-  @@index([userId, date])
+  @@unique([userId, date])
 }
 
 // 具体训练动作组数明细

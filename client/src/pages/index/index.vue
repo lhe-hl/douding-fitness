@@ -17,9 +17,12 @@
 
         <!-- 2. 本周健身与打卡卡片 -->
         <WorkoutCard
-          :week-count="4"
-          :tags="['胸肩塑形', '有氧燃脂']"
+          :status="workoutStatus"
+          :week-count="weekCount"
+          :days="weekDays"
+          :today="todayEcho"
           @click-detail="onWorkoutDetail"
+          @retry="refreshWorkout"
         />
 
         <!-- 3. 饮食和热量卡片 -->
@@ -46,10 +49,24 @@
 </template>
 
 <script setup lang="ts">
+import { onShow } from '@dcloudio/uni-app'
 import HomeHeader from './components/HomeHeader.vue'
 import WorkoutCard from './components/WorkoutCard.vue'
 import DietCard from './components/DietCard.vue'
 import AiCoachCard from './components/AiCoachCard.vue'
+import { useHomeWorkout } from './useHomeWorkout'
+
+const {
+  status: workoutStatus,
+  weekCount,
+  days: weekDays,
+  today: todayEcho,
+  refresh: refreshWorkout,
+} = useHomeWorkout()
+
+onShow(() => {
+  void refreshWorkout()
+})
 
 const onUserClick = () => {
   uni.switchTab({

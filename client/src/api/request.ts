@@ -1,6 +1,6 @@
 // 统一网络请求层与双拦截器封装
 
-const BASE_URL = 'http://localhost:3000/api'
+const BASE_URL = 'http://127.0.0.1:3000/api'
 const TOKEN_KEY = 'douding_auth_token'
 
 // 401 防抖标记，避免多个接口同时 401 弹出重复提示
@@ -11,6 +11,7 @@ export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   data?: any
   header?: Record<string, string>
+  silent?: boolean
 }
 
 export interface ApiResponse<T = any> {
@@ -120,11 +121,12 @@ export function request<T = any>(options: RequestOptions): Promise<T> {
               // 自动解包 data 字段供前端直接使用
               return resolve(resData.data as T)
             } else {
-              // 业务报错自动 Toast 提示
-              uni.showToast({
-                title: resData.message || '业务请求失败',
-                icon: 'none',
-              })
+              if (!options.silent) {
+                uni.showToast({
+                  title: resData.message || '业务请求失败',
+                  icon: 'none',
+                })
+              }
               return reject(resData)
             }
           }
@@ -135,19 +137,24 @@ export function request<T = any>(options: RequestOptions): Promise<T> {
 
         // (3) 其余 HTTP 异常错误 (400, 403, 404, 500 等)
         const errMsg = (data as any)?.message || `请求错误 (HTTP ${statusCode})`
-        uni.showToast({
-          title: errMsg,
-          icon: 'none',
-        })
+        if (!options.silent) {
+          uni.showToast({
+            title: errMsg,
+            icon: 'none',
+          })
+        }
         reject(data)
       },
 
       // 网络链路彻底失败 (断网 / 跨域 / 域名无法访问)
       fail: (err) => {
-        uni.showToast({
-          title: '服务器连接异常，请检查网络',
-          icon: 'none',
-        })
+        console.error('❌ [网络请求失败 uni.request fail]:', fullUrl, err)
+        if (!options.silent) {
+          uni.showToast({
+            title: '服务器连接异常，请检查网络',
+            icon: 'none',
+          })
+        }
         reject(err)
       },
     })
