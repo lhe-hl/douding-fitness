@@ -2,7 +2,19 @@
 
 import { whenSessionReady } from '../auth/session-gate'
 
-const BASE_URL = 'http://127.0.0.1:3000/api'
+const DEVTOOLS_BASE_URL = 'http://127.0.0.1:3000/api'
+
+function resolveBaseUrl(): string {
+  try {
+    const platform = uni.getSystemInfoSync().platform
+    if (platform === 'devtools' || platform === 'windows' || platform === 'mac') {
+      return DEVTOOLS_BASE_URL
+    }
+  } catch {
+    // 系统信息还不可用时按真机地址请求
+  }
+  return __DOUDING_DEVICE_API_BASE__
+}
 const TOKEN_KEY = 'douding_auth_token'
 
 // 401 防抖标记，避免多个接口同时 401 弹出重复提示
@@ -94,7 +106,7 @@ function performRequest<T = any>(options: RequestOptions): Promise<T> {
 
     const fullUrl = options.url.startsWith('http')
       ? options.url
-      : `${BASE_URL}${options.url.startsWith('/') ? options.url : `/${options.url}`}`
+      : `${resolveBaseUrl()}${options.url.startsWith('/') ? options.url : `/${options.url}`}`
 
     // ---------------------- 2. 执行网络请求 ----------------------
     uni.request({
