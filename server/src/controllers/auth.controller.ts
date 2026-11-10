@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { signToken } from '../utils/jwt';
 import { prisma } from '../prisma';
+import { loginWithWechatCode, WechatLoginError } from '../services/wechat-auth.service';
 
 /**
  * 1. 开发/测试登录接口
@@ -33,24 +34,29 @@ export async function devLogin(req: Request, res: Response) {
 }
 
 /**
- * 2. 真实微信登录接口 (预留架构，后续填补微信 code2session 逻辑)
+ * 微信小程序登录：code 换 openid，在共用 User 表查找或创建一行，签发 JWT。
+ * 未配置 AppSecret 或微信拒绝时返回明确错误，不编造 openid。
  */
 export async function wechatLogin(req: Request, res: Response) {
-  const { code } = req.body;
-
-  if (!code) {
-    return res.status(400).json({
-      code: 400,
-      message: '缺少微信 code 参数',
+  try {
+    const data = await loginWithWechatCode(req.body?.code);
+    return res.json({
+      code: 200,
+      message: '微信登录成功',
+      data,
+    });
+  } catch (error) {
+    if (error instanceof WechatLoginError) {
+      return res.status(error.httpStatus).json({
+        code: error.httpStatus,
+        message: error.message,
+      });
+    }
+    const name = error instanceof Error ? error.name : 'Error';
+    console.error(`[wechat-login] 登录失败: ${name}`);
+    return res.status(500).json({
+      code: 500,
+      message: '微信登录失败',
     });
   }
-
-  // TODO: 后续接入真实微信 code 换取 openid:
-  // 1. 请求 https://api.weixin.qq.com/sns/jscode2session?appid=...&secret=...&js_code=${code}&grant_type=authorization_code
-  // 2. prisma.user.upsert 查找或创建用户
-  // 3. signToken({ userId: user.id })
-  return res.status(501).json({
-    code: 501,
-    message: '微信真机登录接口待填入 AppSecret 后启用，开发阶段请调用 /api/auth/dev-login',
-  });
 }
