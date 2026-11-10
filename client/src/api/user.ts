@@ -1,3 +1,4 @@
+import type { WechatLoginData } from '../types/auth'
 import { request, setToken } from './request'
 
 // 开发模式一键登录 (换取测试用户 Token)
@@ -6,6 +7,7 @@ export async function loginDev(userId: string = 'test-user-001') {
     url: '/auth/dev-login',
     method: 'POST',
     data: { userId },
+    skipSession: true,
   })
   if (data?.token) {
     setToken(data.token)
@@ -13,13 +15,19 @@ export async function loginDev(userId: string = 'test-user-001') {
   return data
 }
 
-// 微信真实登录换取 JWT
-export function loginWithWechat(code: string) {
-  return request({
+// 微信 code 换 JWT，并写入 douding_auth_token
+export async function loginWithWechat(code: string, options?: { silent?: boolean }) {
+  const data = await request<WechatLoginData>({
     url: '/auth/wechat-login',
     method: 'POST',
     data: { code },
+    silent: options?.silent,
+    skipSession: true,
   })
+  if (data?.token) {
+    setToken(data.token)
+  }
+  return data
 }
 
 // 获取用户身体档案

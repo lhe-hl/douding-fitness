@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getToken } from '../../api/request'
+import { whenSessionReady } from '../../auth/session-gate'
 import { loginDev } from '../../api/user'
 import {
   deleteWorkout,
@@ -117,6 +118,7 @@ export function useWorkoutPage() {
   }
 
   async function ensureAndRefresh() {
+    await whenSessionReady()
     if (!getToken()) {
       detailPhase.value = 'loading'
       currentDetail.value = null

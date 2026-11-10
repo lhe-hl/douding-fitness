@@ -1,5 +1,7 @@
 // 统一网络请求层与双拦截器封装
 
+import { whenSessionReady } from '../auth/session-gate'
+
 const BASE_URL = 'http://127.0.0.1:3000/api'
 const TOKEN_KEY = 'douding_auth_token'
 
@@ -12,6 +14,7 @@ export interface RequestOptions {
   data?: any
   header?: Record<string, string>
   silent?: boolean
+  skipSession?: boolean
 }
 
 export interface ApiResponse<T = any> {
@@ -66,6 +69,16 @@ export function isLoggedIn(): boolean {
  * 统一网络请求核心方法 (含请求拦截与响应拦截)
  */
 export function request<T = any>(options: RequestOptions): Promise<T> {
+  const gate = options.skipSession
+    ? Promise.resolve()
+    : whenSessionReady().then(
+        () => undefined,
+        () => undefined,
+      )
+  return gate.then(() => performRequest<T>(options))
+}
+
+function performRequest<T = any>(options: RequestOptions): Promise<T> {
   return new Promise((resolve, reject) => {
     // ---------------------- 1. 请求拦截器 ----------------------
     const token = getToken()
