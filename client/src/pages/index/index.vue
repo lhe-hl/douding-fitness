@@ -1,7 +1,21 @@
 ﻿<template>
   <view class="page-container">
-    <!-- 顶部状态栏避让占位 -->
-    <view class="status-bar-placeholder"></view>
+    <!-- 顶栏：占满安全区并让出右上角胶囊，避免盖住问候和打卡 -->
+    <view class="home-top-strip">
+      <view class="strip-safe"></view>
+      <view class="strip-band">
+        <view class="brand-mark">
+          <text class="brand-mark-text">豆</text>
+        </view>
+        <view class="brand-copy">
+          <text class="brand-name">豆丁健身</text>
+          <view class="brand-meta">
+            <view class="brand-rule"></view>
+            <text class="brand-hint">动一动，吃明白</text>
+          </view>
+        </view>
+      </view>
+    </view>
 
     <!-- 滚动区域 -->
     <scroll-view scroll-y class="scroll-content" :show-scrollbar="false">
@@ -115,11 +129,88 @@ const onAskCoach = () => {
   flex-direction: column;
 }
 
-/* 顶部状态栏自适应 */
-.status-bar-placeholder {
+/* 白卡片顶栏：安全区 + 胶囊高度，右侧留给微信胶囊 */
+.home-top-strip {
+  flex-shrink: 0;
+  width: 100%;
+  background-color: #FFFFFF;
+  border-radius: 0 0 36rpx 36rpx;
+  box-shadow: 0 8rpx 28rpx rgba(116, 192, 67, 0.12);
+  overflow: hidden;
+}
+
+.strip-safe {
+  height: constant(safe-area-inset-top);
   height: env(safe-area-inset-top);
-  min-height: 48rpx;
-  background-color: #F7F8FA;
+  min-height: 88rpx;
+  background-color: #FFFFFF;
+}
+
+.strip-band {
+  min-height: 128rpx;
+  padding: 8rpx 200rpx 24rpx 28rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+}
+
+.brand-mark {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 22rpx;
+  background-color: #74C043;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 6rpx 16rpx rgba(116, 192, 67, 0.35);
+}
+
+.brand-mark-text {
+  color: #FFFFFF;
+  font-size: 36rpx;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.brand-copy {
+  margin-left: 20rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.brand-name {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: -0.5rpx;
+  line-height: 1.2;
+}
+
+.brand-meta {
+  margin-top: 8rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.brand-rule {
+  width: 28rpx;
+  height: 6rpx;
+  border-radius: 6rpx;
+  background-color: #74C043;
+  margin-right: 10rpx;
+  flex-shrink: 0;
+}
+
+.brand-hint {
+  font-size: 22rpx;
+  font-weight: 500;
+  color: #8E8E93;
+  line-height: 1.2;
 }
 
 .scroll-content {
@@ -129,7 +220,7 @@ const onAskCoach = () => {
 }
 
 .inner-padding {
-  padding: 16rpx 28rpx 40rpx 28rpx;
+  padding: 24rpx 28rpx 40rpx 28rpx;
 }
 
 .bottom-spacer {
