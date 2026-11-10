@@ -1,9 +1,7 @@
 ﻿<template>
   <view class="page-container">
-    <!-- 固定顶栏：安全区与胶囊下方，右侧留给微信胶囊 -->
+    <!-- 固定顶栏只包住品牌内容，贴在胶囊下沿 -->
     <view class="home-top-strip">
-      <view class="strip-safe"></view>
-      <view class="strip-capsule"></view>
       <view class="strip-band">
         <view class="brand-mark">
           <text class="brand-mark-text">豆</text>
@@ -17,10 +15,9 @@
         </view>
       </view>
     </view>
-    <!-- 与固定顶栏同高，把滚动区顶到顶栏下面 -->
+    <!-- 与固定顶栏同高，问候从顶栏下沿开始 -->
     <view class="home-top-spacer">
-      <view class="strip-safe"></view>
-      <view class="strip-capsule"></view>
+      <view class="strip-offset"></view>
       <view class="strip-band"></view>
     </view>
 
@@ -147,17 +144,18 @@ page {
   overflow: hidden;
 }
 
-/* 固定白卡片：先让出安全区和胶囊，品牌行在胶囊下面，右侧留白 */
+/* 胶囊下沿的紧凑白条，高度只包住豆 / 标题 / 副文案 */
 .home-top-strip {
   position: fixed;
-  top: 0;
   left: 0;
   right: 0;
   z-index: 20;
+  top: 80rpx;
+  top: calc(constant(safe-area-inset-top) + 80rpx);
+  top: calc(env(safe-area-inset-top) + 80rpx);
   background-color: #FFFFFF;
   border-radius: 0 0 36rpx 36rpx;
   box-shadow: 0 8rpx 28rpx rgba(116, 192, 67, 0.12);
-  overflow: hidden;
 }
 
 .home-top-spacer {
@@ -166,19 +164,15 @@ page {
   visibility: hidden;
 }
 
-.strip-safe {
-  height: constant(safe-area-inset-top);
-  height: env(safe-area-inset-top);
-  min-height: 88rpx;
-}
-
-.strip-capsule {
-  height: 112rpx;
+.strip-offset {
+  height: 80rpx;
+  height: calc(constant(safe-area-inset-top) + 80rpx);
+  height: calc(env(safe-area-inset-top) + 80rpx);
 }
 
 .strip-band {
-  height: 132rpx;
-  padding: 0 200rpx 0 28rpx;
+  height: 96rpx;
+  padding: 0 28rpx;
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
@@ -257,7 +251,7 @@ page {
 }
 
 .inner-padding {
-  padding: 24rpx 28rpx 40rpx 28rpx;
+  padding: 12rpx 28rpx 40rpx 28rpx;
 }
 
 .bottom-spacer {
